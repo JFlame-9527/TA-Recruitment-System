@@ -6,3 +6,5 @@
 - QhCrocus: 231224125 (member)
 - WYkkkl: 231224446 (member)
 - 477996850:231224907(member)
+- Xiri04: 231224491 (member)
+- WYkkkl: 231224446 (member)
