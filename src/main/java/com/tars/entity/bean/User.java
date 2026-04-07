@@ -1,4 +1,4 @@
-package com.tars.bean;
+package com.tars.entity.bean;
 
 import lombok.Data;
 
@@ -14,15 +14,31 @@ import java.util.UUID;
  */
 @Data
 public class User {
+
     private String id;
+
     private String name;
+
     private String password;
+
     private int role;
+
     private int status;
+
     private Timestamp createAt;
+
+    private Timestamp updateAt;
+
+    private Timestamp lastLoginAt;
 
     public User() {
         this.id = UUID.randomUUID().toString();
         this.createAt = Timestamp.valueOf(LocalDateTime.now());
+    }
+
+    public User(String id, String name, String password) {
+        this.id = id;
+        this.name = name;
+        this.password = password;
     }
 }

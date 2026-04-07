@@ -2,46 +2,39 @@ package com.tars.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
-import com.tars.bean.User;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Jflame
  * @version 1.0.0
  * @since 2026/3/22
  */
-public class JsonRepository {
+public class JsonRepository<T> {
     private final ObjectMapper objectMapper;
     private final String dataDir;
-    private final Map<Class<?>, String> entityToFileMap;
+    private final Class<T> entityClass;
+    private final String fileName;
 
-    public JsonRepository() {
+    public JsonRepository(Class<T> entityClass) {
         this.objectMapper = new ObjectMapper();
         this.dataDir = "data";
-        this.entityToFileMap = new ConcurrentHashMap<>();
+        this.entityClass = entityClass;
+        this.fileName = entityClass.getSimpleName().toLowerCase() + ".json";
 
-        initializeEntityMappings();
         ensureDataDirectoryExists();
     }
 
-    private void initializeEntityMappings() {
-        entityToFileMap.put(User.class, "user.json");
-        // todo add more entity mappings as needed
-    }
-
-    public <T> void saveEntity(T entity, Class<T> entityClass) throws IOException {
-        List<T> entities = loadAllEntities(entityClass);
+    public void saveEntity(T entity) throws IOException {
+        List<T> entities = loadAllEntities();
         boolean found = false;
 
         for (int i = 0; i < entities.size(); i++) {
             T existing = entities.get(i);
-            if (hasSameId(existing, entity, entityClass)) {
+            if (hasSameId(existing, entity)) {
                 entities.set(i, entity);
                 found = true;
                 break;
@@ -52,17 +45,15 @@ public class JsonRepository {
             entities.add(entity);
         }
 
-        saveAllEntities(entities, entityClass);
+        saveAllEntities(entities);
     }
 
-    public <T> void saveAllEntities(List<T> entities, Class<T> entityClass) throws IOException {
-        String fileName = getFileNameForEntity(entityClass);
+    public void saveAllEntities(List<T> entities) throws IOException {
         File file = new File(dataDir, fileName);
         objectMapper.writeValue(file, entities);
     }
 
-    public <T> List<T> loadAllEntities(Class<T> entityClass) throws IOException {
-        String fileName = getFileNameForEntity(entityClass);
+    public List<T> loadAllEntities() throws IOException {
         File file = new File(dataDir, fileName);
 
         if (!file.exists() || file.length() == 0) {
@@ -75,34 +66,26 @@ public class JsonRepository {
         return objectMapper.readValue(file, collectionType);
     }
 
-    public <T> T getEntityById(String id, Class<T> entityClass) throws IOException {
-        List<T> entities = loadAllEntities(entityClass);
+    public T getEntityById(String id) throws IOException {
+        List<T> entities = loadAllEntities();
         return entities.stream()
-                .filter(e -> getIdValue(e, entityClass).equals(id))
+                .filter(e -> getIdValue(e).equals(id))
                 .findFirst()
                 .orElse(null);
     }
 
-    public <T> boolean deleteEntity(String id, Class<T> entityClass) throws IOException {
-        List<T> entities = loadAllEntities(entityClass);
-        boolean removed = entities.removeIf(e -> getIdValue(e, entityClass).equals(id));
+    public boolean deleteEntity(String id) throws IOException {
+        List<T> entities = loadAllEntities();
+        boolean removed = entities.removeIf(e -> getIdValue(e).equals(id));
 
         if (removed) {
-            saveAllEntities(entities, entityClass);
+            saveAllEntities(entities);
         }
 
         return removed;
     }
 
-    private <T> String getFileNameForEntity(Class<T> entityClass) {
-        String fileName = entityToFileMap.get(entityClass);
-        if (fileName == null) {
-            fileName = entityClass.getSimpleName().toLowerCase() + ".json";
-        }
-        return fileName;
-    }
-
-    private <T> String getIdValue(T entity, Class<T> entityClass) {
+    private String getIdValue(T entity) {
         try {
             java.lang.reflect.Method getIdMethod = entityClass.getMethod("getId");
             Object id = getIdMethod.invoke(entity);
@@ -112,9 +95,9 @@ public class JsonRepository {
         }
     }
 
-    private <T> boolean hasSameId(T entity1, T entity2, Class<T> entityClass) {
-        String id1 = getIdValue(entity1, entityClass);
-        String id2 = getIdValue(entity2, entityClass);
+    private boolean hasSameId(T entity1, T entity2) {
+        String id1 = getIdValue(entity1);
+        String id2 = getIdValue(entity2);
         return id1 != null && id1.equals(id2);
     }
 
