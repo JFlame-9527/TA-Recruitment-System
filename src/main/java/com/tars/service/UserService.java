@@ -113,6 +113,10 @@ public class UserService {
         if (source.getPassword() != null) {
             exist.setPassword(source.getPassword());
         }
+
+        exist.setRole(source.getRole());
+
+        exist.setStatus(source.getStatus());
         
         exist.setUpdateAt(Timestamp.valueOf(LocalDateTime.now()));
         return exist;
