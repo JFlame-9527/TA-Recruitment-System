@@ -416,14 +416,14 @@ public class FileUtils {
             return null;
         }
 
+        // Normalize slashes first (convert backslashes to forward slashes)
+        path = path.replace("\\", "/");
+
         // Only allow safe characters (alphanumeric, dash, underscore, dot, slash)
         if (!path.matches("[a-zA-Z0-9_\\-./]+")) {
             log.warn("Invalid characters in path: {}", path);
             return null;
         }
-
-        // Normalize slashes (convert backslashes to forward slashes)
-        path = path.replace("\\", "/");
 
         // Remove leading slash
         if (path.startsWith("/")) {
