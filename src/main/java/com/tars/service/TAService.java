@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author QiheSun
- * @version 1.0.0
+ * @author QiheSun Xiri04
+ * @version 2.0.0
  * @since 2026/3/25
  */
 @Slf4j
@@ -93,7 +93,6 @@ public class TAService {
         }
     }
 
-
     /**
      * Update profile with validation
      *
@@ -123,8 +122,8 @@ public class TAService {
             taProfileRepo.saveEntity(taProfile);
             log.info("update taProfile success, taProfileId: {}", taProfile.getId());
         } catch (IOException e) {
-            log.error("update taProfile failed, taProfileId: {}, error message: {}", 
-                     taProfile.getId(), e.getMessage(), e);
+            log.error("update taProfile failed, taProfileId: {}, error message: {}",
+                    taProfile.getId(), e.getMessage(), e);
             return false;
         }
         return true;

@@ -26,18 +26,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author QiheSun
- * @version 1.0.0
+ * @author QiheSun Xiri04
+ * @version 2.0.0
  * @since 2026/3/26
  */
 @Slf4j
 @WebServlet(name = "TAServlet", value = "/taServlet")
-@MultipartConfig(
-        fileSizeThreshold = 0, // 0MB - files smaller than this are kept in memory
-        maxFileSize = 1024 * 1024 * 10,      // 10MB - maximum file size allowed
-        maxRequestSize = 1024 * 1024 * 50    // 50MB - maximum request size (files + form data)
+@MultipartConfig(fileSizeThreshold = 0, // 0MB - files smaller than this are kept in memory
+        maxFileSize = 1024 * 1024 * 10, // 10MB - maximum file size allowed
+        maxRequestSize = 1024 * 1024 * 50 // 50MB - maximum request size (files + form data)
 )
-public class TAServlet extends BaseServlet{
+public class TAServlet extends BaseServlet {
 
     private TAService taService;
 
@@ -71,11 +70,12 @@ public class TAServlet extends BaseServlet{
 
     private void getProfile(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         Object userObj = req.getSession().getAttribute("user");
-        if (!verifyUser(req, resp, userObj)) return;
+        if (!verifyUser(req, resp, userObj))
+            return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
         ProfileDTO profile = taService.getProfileDTO(userId);
-        
+
         if (profile == null) {
             log.warn("Profile not found for user {}", userId);
             req.setAttribute("warn", "Profile not found. Please create your profile first.");
@@ -96,7 +96,7 @@ public class TAServlet extends BaseServlet{
 
     private void downloadResume(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String fileName = req.getParameter("file");
-        
+
         // Validate and sanitize the file path
         String sanitizedPath = FileUtils.sanitizePath(fileName);
         if (sanitizedPath == null) {
@@ -106,7 +106,7 @@ public class TAServlet extends BaseServlet{
         }
 
         String webRootPath = getServletContext().getRealPath("");
-        
+
         // Serve the file securely using FileUtils
         try {
             FileUtils.serveFile(req, resp, webRootPath, sanitizedPath);
@@ -118,9 +118,10 @@ public class TAServlet extends BaseServlet{
 
     private void updateProfile(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         Object userObj = req.getSession().getAttribute("user");
-        if (!verifyUser(req, resp, userObj)) return;
+        if (!verifyUser(req, resp, userObj))
+            return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
         log.info("Updating profile for TA user {}", userId);
 
         try {
@@ -139,19 +140,19 @@ public class TAServlet extends BaseServlet{
             // Step 3: Handle file upload (if any)
             Part resumePart = FileUtils.getFilePart(req, "resume");
             String webRootPath = getServletContext().getRealPath("");
-            
+
             if (resumePart != null && resumePart.getSize() > 0) {
                 // User uploaded a new resume
                 log.info("New resume detected, processing upload...");
-                
+
                 // Save new file
                 String newPath = FileUtils.savePdfFile(resumePart, webRootPath, "resumes");
                 String originalFileName = Paths.get(resumePart.getSubmittedFileName()).getFileName().toString();
-                
+
                 // Set new file info
                 updatedProfile.setResumePath(newPath);
                 updatedProfile.setResumeName(originalFileName);
-                
+
                 // Delete old file if exists
                 if (existingProfile.getResumePath() != null) {
                     boolean deleted = FileUtils.deleteFile(webRootPath, existingProfile.getResumePath());
@@ -170,8 +171,8 @@ public class TAServlet extends BaseServlet{
 
             // Step 4: Merge updated fields into existing profile
             // Ignore system fields that shouldn't be updated via form
-            BeanUtils.merge(updatedProfile, existingProfile, 
-                           "id", "userId", "createAt", "updateAt");
+            BeanUtils.merge(updatedProfile, existingProfile,
+                    "id", "userId", "createAt", "updateAt");
 
             // Step 5: Update timestamp
             existingProfile.setUpdateAt(java.sql.Timestamp.valueOf(java.time.LocalDateTime.now()));
@@ -212,9 +213,10 @@ public class TAServlet extends BaseServlet{
 
     private void createProfile(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         Object userObj = req.getSession().getAttribute("user");
-        if (!verifyUser(req, resp, userObj)) return;
+        if (!verifyUser(req, resp, userObj))
+            return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
 
         boolean exist = taService.checkProfileExist(userId);
         if (exist) {
@@ -227,35 +229,35 @@ public class TAServlet extends BaseServlet{
 
         try {
             TAProfile profile = BeanUtils.mapFromReq(req, TAProfile.class);
-            
+
             profile.setUserId(userId);
-            
+
             Part resumePart = FileUtils.getFilePart(req, "resume");
-            
+
             if (resumePart == null || resumePart.getSize() == 0) {
                 req.setAttribute("error", "Resume is required when creating profile");
                 req.getRequestDispatcher("/views/ta/profile.jsp").forward(req, resp);
                 return;
             }
-            
+
             String originalFileName = Paths.get(resumePart.getSubmittedFileName()).getFileName().toString();
             profile.setResumeName(originalFileName);
-            
+
             String webRootPath = getServletContext().getRealPath("");
             String resumePath = FileUtils.savePdfFile(resumePart, webRootPath, "resumes");
             profile.setResumePath(resumePath);
-            
-            log.info("Resume uploaded successfully - Original name: {}, Saved path: {}", 
+
+            log.info("Resume uploaded successfully - Original name: {}, Saved path: {}",
                     originalFileName, resumePath);
-            
+
             if (profile.getName() == null || profile.getName().trim().isEmpty()) {
                 req.setAttribute("error", "Name is required");
                 req.getRequestDispatcher("/views/ta/profile.jsp").forward(req, resp);
                 return;
             }
-            
+
             boolean created = taService.createProfile(profile);
-            
+
             if (created) {
                 log.info("Profile created successfully for user {}", userId);
                 resp.sendRedirect(req.getContextPath() + "/taServlet?action=getProfile&success=created");
@@ -264,7 +266,7 @@ public class TAServlet extends BaseServlet{
                 req.setAttribute("error", "Failed to create profile");
                 req.getRequestDispatcher("/views/ta/profile.jsp").forward(req, resp);
             }
-            
+
         } catch (IllegalArgumentException e) {
             log.error("Invalid parameter format: {}", e.getMessage(), e);
             req.setAttribute("error", "Invalid data format: " + e.getMessage());
