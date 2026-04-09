@@ -9,7 +9,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
 /**
- * @author QiheSun
+ * @author Jflame
  * @version 1.0.0
  * @since 2026/3/30
  */
@@ -18,5 +18,5 @@ public interface ProfileMapper {
 
     ProfileMapper INSTANCE = Mappers.getMapper(ProfileMapper.class);
 
-    ProfileDTO toTAProfileDTO(TAProfile taProfile);
+    com.tars.entity.dto.mo.ProfileDTO toMOProfileDTO(TAProfile profile, String feedback);
 }

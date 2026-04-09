@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 /**
- * @author Xiri04
+ * @author Jflame
  * @version 1.0.0
  * @since 2026/3/30
  */
@@ -18,14 +18,10 @@ public interface PosMapper {
     PosMapper INSTANCE = Mappers.getMapper(PosMapper.class);
 
     @Mapping(target = "posId", source = "position.id")
-    @Mapping(target = "posStatus", source = "position.status")
-    @Mapping(target = "appId", source = "application.id")
-    @Mapping(target = "appStatus", source = "application.status")
-    PosBriefDTO toTAPosBriefDTO(Position position, Application application);
+    @Mapping(target = "vacancyNum", expression = "java(position.getRequiredNum() - position.getOfferedNum())")
+    @Mapping(target = "pendingNum", expression = "java(position.getAppliedNum() - position.getOfferedNum() - position.getRejectedNum())")
+    com.tars.entity.dto.mo.PosBriefDTO toMOPosBriefDTO(Position position);
 
     @Mapping(target = "posId", source = "position.id")
-    @Mapping(target = "posStatus", source = "position.status")
-    @Mapping(target = "appId", source = "application.id")
-    @Mapping(target = "appStatus", source = "application.status")
-    PosDetailDTO toTAPosDetailDTO(Position position, Application application);
+    com.tars.entity.dto.mo.PosDetailDTO toMOPosDetailDTO(Position position);
 }
