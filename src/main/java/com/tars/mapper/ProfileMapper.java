@@ -9,7 +9,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
 /**
- * @author Yue Wang
+ * @author QiheSun
  * @version 1.0.0
  * @since 2026/3/30
  */
@@ -21,4 +21,5 @@ public interface ProfileMapper {
     TAProDTO toProfileDTO(TAProfile profile);
 
     MOProDTO toMOProfileDTO(MOProfile profile);
+    ProfileDTO toTAProfileDTO(TAProfile taProfile);
 }
