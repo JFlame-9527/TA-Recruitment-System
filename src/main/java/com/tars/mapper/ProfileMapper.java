@@ -18,8 +18,5 @@ public interface ProfileMapper {
 
     ProfileMapper INSTANCE = Mappers.getMapper(ProfileMapper.class);
 
-    TAProDTO toProfileDTO(TAProfile profile);
-
-    MOProDTO toMOProfileDTO(MOProfile profile);
     ProfileDTO toTAProfileDTO(TAProfile taProfile);
 }
