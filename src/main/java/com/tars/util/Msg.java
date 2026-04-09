@@ -38,7 +38,7 @@ public class Msg<T> {
      * Create a success response with data only
      */
     public static <T> Msg<T> success(T data) {
-        return new Msg<>(true, "Operation successful", data);
+        return new Msg<>(true, "success", data);
     }
 
     /**
