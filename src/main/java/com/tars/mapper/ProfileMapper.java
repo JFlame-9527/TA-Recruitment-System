@@ -9,7 +9,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
 
 /**
- * @author Jflame
+ * @author 477996850
  * @version 1.0.0
  * @since 2026/3/30
  */
