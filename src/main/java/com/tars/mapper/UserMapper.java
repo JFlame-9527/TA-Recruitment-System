@@ -8,7 +8,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 /**
- * @author 477996850
+ * @author JFlame
  * @version 1.0.0
  * @since 2026/3/24
  */
