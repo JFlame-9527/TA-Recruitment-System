@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Utility class to map HttpServletRequest parameters to Java beans
  *
- * @author Jflame
+ * @author Jflame 477996850
  * @version 1.0.0
  * @since 2026/4/2
  */
