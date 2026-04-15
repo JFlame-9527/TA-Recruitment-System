@@ -18,5 +18,13 @@ public class QueryCondition {
 
     private String search;
 
-    private Integer page;
+    private Integer page = 1;
+
+    public void setPage(Integer page) {
+        if (page != null && page > 0) {
+            this.page = page;
+        } else {
+            this.page = 1;
+        }
+    }
 }
