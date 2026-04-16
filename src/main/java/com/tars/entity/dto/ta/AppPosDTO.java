@@ -2,6 +2,8 @@ package com.tars.entity.dto.ta;
 
 import lombok.Data;
 
+import java.sql.Timestamp;
+
 /**
  * @author Xiri04
  * @version 1.0.0
@@ -25,4 +27,6 @@ public class AppPosDTO {
     private int requiredNum;
 
     private int status; // 0-applied, 1-offered, 2-rejected, 3-withdrawn
+
+    private Timestamp applyAt;
 }
