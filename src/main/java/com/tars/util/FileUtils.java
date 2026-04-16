@@ -36,17 +36,17 @@ public class FileUtils {
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
 
     // Upload directory name under web root
-    private static final String UPLOAD_DIR = "uploads";
+    private static final String UPLOAD_DIR = "upload";
 
     /**
-     * Securely save uploaded PDF file to web root /uploads/{subDir} directory.
+     * Securely save uploaded PDF file to web root /upload/{subDir} directory.
      *
      * @param part The uploaded file part from multipart request
      * @param webRootPath The web application root path (from getServletContext().getRealPath(""))
      * @param subDir Subdirectory under uploads folder (e.g., "resumes", "photos")
      * @return Relative path for database storage (e.g., "resumes/uuid.pdf")
      * @throws Exception if validation fails or IO error occurs
-     *
+     * <p>
      * Usage example:
      * <pre>{@code
      * Part resumePart = getFilePart(req, "resume");
@@ -128,7 +128,7 @@ public class FileUtils {
      * @param req HttpServletRequest containing the multipart request
      * @param fieldName The form field name (e.g., "resume", "photo")
      * @return The Part object if found with content, null otherwise
-     *
+     * <p>
      * Usage example:
      * <pre>{@code
      * Part resumePart = FileUploadUtil.getFilePart(req, "resume");
@@ -151,12 +151,12 @@ public class FileUtils {
     }
 
     /**
-     * Delete uploaded file from the uploads directory.
+     * Delete uploaded file from the upload directory.
      *
      * @param webRootPath The web application root path
      * @param relativePath The relative path stored in database
      * @return true if deleted successfully, false otherwise
-     *
+     * <p>
      * Usage example:
      * <pre>{@code
      * String oldResumePath = profile.getResumePath();
@@ -201,7 +201,7 @@ public class FileUtils {
     }
 
     /**
-     * Check if file exists in the uploads directory.
+     * Check if file exists in the upload directory.
      *
      * @param webRootPath The web application root path
      * @param relativePath The relative path stored in database
@@ -238,7 +238,7 @@ public class FileUtils {
      * @param contextPath The web application context path (from req.getContextPath())
      * @param relativePath The relative path stored in database (e.g., "resumes/uuid.pdf")
      * @return Web-accessible URL (e.g., "/app/uploads/resumes/uuid.pdf"), or null if invalid
-     *
+     * <p>
      * Usage example:
      * <pre>{@code
      * TAProfile profile = taService.getProfile(userId);
@@ -282,7 +282,7 @@ public class FileUtils {
      * @param webRootPath The web application root path
      * @param relativePath The relative path stored in database
      * @throws IOException if IO error occurs
-     *
+     * <p>
      * Usage example in Servlet:
      * <pre>{@code
      * private void downloadResume(HttpServletRequest req, HttpServletResponse resp)
@@ -390,7 +390,7 @@ public class FileUtils {
      *
      * @param path The path to validate
      * @return Sanitized path or null if invalid
-     *
+     * <p>
      * Usage example:
      * <pre>{@code
      * String fileName = req.getParameter("file");
