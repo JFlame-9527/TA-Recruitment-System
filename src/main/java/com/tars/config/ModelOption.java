@@ -1,7 +1,7 @@
 package com.tars.config;
 
+import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.SuperBuilder;
 
 /**
  * @author Jflame
@@ -9,8 +9,9 @@ import lombok.experimental.SuperBuilder;
  * @since 2026/4/16
  */
 @Data
-@SuperBuilder
+@Builder
 public class ModelOption {
+
     private String model;
 
     private float temperature;
@@ -22,4 +23,6 @@ public class ModelOption {
     private float repetitionPenalty;
 
     private int maxTokens;
+
+    private int dimension;
 }

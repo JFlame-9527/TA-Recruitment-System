@@ -1,0 +1,29 @@
+{
+  "apiKey": "your_apiKey",
+  "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "qwen" : {
+    "model": "qwen3.5-plus-2026-02-15",
+    "maxTokens": 512,
+    "temperature": 0.0,
+    "topP": 0.01,
+    "topK": 1,
+    "repetitionPenalty": 1.1
+  },
+  "long": {
+    "model": "qwen-long",
+    "maxTokens": 1024,
+    "temperature": 0.0,
+    "topP": 0.01,
+    "topK": 1,
+    "repetitionPenalty": 1.1
+  },
+  "vector": {
+    "model": "qwen3-vl-embedding",
+    "dimension": 768
+  },
+  "weight": {
+    "skills": 0.6,
+    "softSkills": 0.25,
+    "experience": 0.15
+  }
+}

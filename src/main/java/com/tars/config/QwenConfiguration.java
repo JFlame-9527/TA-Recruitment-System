@@ -24,14 +24,18 @@ public class QwenConfiguration {
 
     private final String apiKey;
     private final String baseUrl;
-    private final ModelOption qwenMax;
+    private final ModelOption qwen;
     private final ModelOption qwenLong;
+    private final ModelOption qwenVector;
+    private final Weight weight;
 
-    private QwenConfiguration(String apiKey, String baseUrl, ModelOption qwenMax, ModelOption qwenLong) {
+    private QwenConfiguration(String apiKey, String baseUrl, ModelOption qwen, ModelOption qwenLong, ModelOption qwenVector, Weight weight) {
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
-        this.qwenMax = qwenMax;
+        this.qwen = qwen;
         this.qwenLong = qwenLong;
+        this.qwenVector = qwenVector;
+        this.weight = weight;
     }
 
     public static QwenConfiguration getInstance() {
@@ -54,32 +58,59 @@ public class QwenConfiguration {
 
         try {
             String webAppRootPath = servletContext.getRealPath("");
-            ConfigData configData = loadConfigData(webAppRootPath);
-
-            validateApiKey(configData.apiKey);
-            validateBaseUrl(configData.baseUrl);
-
-            instance = new QwenConfiguration(
-                    configData.apiKey,
-                    configData.baseUrl,
-                    configData.qwenMax,
-                    configData.qwenLong
-            );
-
-            log.info("QwenConfiguration initialized successfully");
-            log.info("API Key: {}", maskValue(instance.apiKey));
-            log.info("Base URL: {}", instance.baseUrl);
-
-            if (instance.qwenMax != null) {
-                log.info("Qwen-Max: {}", instance.qwenMax);
-            }
-            if (instance.qwenLong != null) {
-                log.info("Qwen-Long: {}", instance.qwenLong);
-            }
-
+            initializeInternal(webAppRootPath);
         } catch (Exception e) {
             log.error("Failed to initialize QwenConfiguration", e);
             throw new RuntimeException("Failed to initialize QwenConfiguration: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Initialize configuration for testing purposes (without ServletContext)
+     *
+     * @param webAppRootPath Path to test resources directory
+     */
+    public static synchronized void initializeForTest(String webAppRootPath) {
+        if (instance != null) {
+            log.warn("QwenConfiguration already initialized, skipping");
+            return;
+        }
+
+        try {
+            initializeInternal(webAppRootPath);
+        } catch (Exception e) {
+            log.error("Failed to initialize QwenConfiguration for tests", e);
+            throw new RuntimeException("Failed to initialize QwenConfiguration: " + e.getMessage(), e);
+        }
+    }
+
+    private static void initializeInternal(String webAppRootPath) {
+        ConfigData configData = loadConfigData(webAppRootPath);
+
+        validateApiKey(configData.apiKey());
+        validateBaseUrl(configData.baseUrl());
+
+        instance = new QwenConfiguration(
+                configData.apiKey(),
+                configData.baseUrl(),
+                configData.qwen(),
+                configData.qwenLong(),
+                configData.qwenVector(),
+                configData.weight()
+        );
+
+        log.info("QwenConfiguration initialized successfully");
+        log.info("API Key: {}", maskValue(instance.apiKey));
+        log.info("Base URL: {}", instance.baseUrl);
+
+        if (instance.qwen != null) {
+            log.info("Qwen: {}", instance.qwen);
+        }
+        if (instance.qwenLong != null) {
+            log.info("Qwen-Long: {}", instance.qwenLong);
+        }
+        if (instance.qwenVector != null) {
+            log.info("Qwen-Vector: {}", instance.qwenVector);
         }
     }
 
@@ -95,10 +126,12 @@ public class QwenConfiguration {
 
             String apiKey = extractStringValue(configNode, "apiKey");
             String baseUrl = extractStringValue(configNode, "baseUrl");
-            ModelOption qwenMax = parseModelOption(configNode, "qwen3-max");
-            ModelOption qwenLong = parseModelOption(configNode, "qwen-long");
+            ModelOption qwen = parseModelOption(configNode, "qwen");
+            ModelOption qwenLong = parseModelOption(configNode, "long");
+            ModelOption qwenVector = parseModelOption(configNode, "vector");
+            Weight weight = parseWeight(configNode);
 
-            return new ConfigData(apiKey, baseUrl, qwenMax, qwenLong);
+            return new ConfigData(apiKey, baseUrl, qwen, qwenLong, qwenVector, weight);
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to load configuration: " + e.getMessage(), e);
@@ -150,6 +183,7 @@ public class QwenConfiguration {
                     .topP(extractDoubleValue(modelNode, "topP", 0.8f))
                     .topK(extractIntValue(modelNode, "topK", 50))
                     .repetitionPenalty(extractFloatValue(modelNode, "repetitionPenalty", 1.0f))
+                    .dimension(extractIntValue(modelNode, "dimension", 1024))
                     .build();
 
         } catch (Exception e) {
@@ -158,12 +192,32 @@ public class QwenConfiguration {
         }
     }
 
+    private static Weight parseWeight(JsonNode rootNode) {
+        JsonNode weightNode = rootNode.get("weight");
+        if (weightNode == null || weightNode.isNull()) {
+            log.warn("Weight configuration '{}' not found, using defaults", "weight");
+            return createDefaultWeight();
+        }
+        return Weight.builder()
+                .skills(extractFloatValue(weightNode, "skills", 0.33f))
+                .experience(extractFloatValue(weightNode, "experience", 0.33f))
+                .softSkills(extractFloatValue(weightNode, "softSkills", 0.33f))
+                .build();
+    }
+
     private static ModelOption createDefaultModelOption(String modelName) {
         return ModelOption.builder()
                 .model(modelName)
                 .build();
     }
 
+    private static Weight createDefaultWeight() {
+        return Weight.builder()
+                .skills(0.33f)
+                .experience(0.33f)
+                .softSkills(0.33f)
+                .build();
+    }
     private static void validateApiKey(String apiKey) {
         if (apiKey == null || apiKey.trim().isEmpty()) {
             throw new IllegalArgumentException("API key cannot be null or empty");
@@ -212,6 +266,6 @@ public class QwenConfiguration {
         return value.substring(0, 4) + "..." + value.substring(value.length() - 4);
     }
 
-    private record ConfigData(String apiKey, String baseUrl, ModelOption qwenMax, ModelOption qwenLong) {
+    private record ConfigData(String apiKey, String baseUrl, ModelOption qwen, ModelOption qwenLong, ModelOption qwenVector, Weight weight) {
     }
 }
