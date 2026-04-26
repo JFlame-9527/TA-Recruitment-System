@@ -177,7 +177,7 @@ public class QwenConfiguration {
 
         try {
             return ModelOption.builder()
-                    .model(modelName)
+                    .model(extractStringValue(modelNode, "model"))
                     .maxTokens(extractIntValue(modelNode, "maxTokens", 2048))
                     .temperature(extractFloatValue(modelNode, "temperature", 0.7f))
                     .topP(extractDoubleValue(modelNode, "topP", 0.8f))
