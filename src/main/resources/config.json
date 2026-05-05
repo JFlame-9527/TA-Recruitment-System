@@ -1,0 +1,11 @@
+{
+  "environment": "dev",
+  "active": {
+    "cleanData": true,
+    "generateData": true
+  },
+  "paths": {
+    "data": "data",
+    "file": "upload"
+  }
+}

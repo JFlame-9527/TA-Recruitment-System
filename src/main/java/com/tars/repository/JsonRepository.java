@@ -2,6 +2,9 @@ package com.tars.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,24 +12,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * JSON file repository for entity persistence
+ *
  * @author Jflame
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2026/3/22
  */
+@Slf4j
 public class JsonRepository<T> {
     private final ObjectMapper objectMapper;
-    private final String dataDir;
     private final Class<T> entityClass;
     private final String fileName;
 
+    @Getter
+    @Setter
+    private static String dataDir = "data";
+
     public JsonRepository(Class<T> entityClass) {
         this.objectMapper = new ObjectMapper();
-        this.dataDir = "data";
         this.entityClass = entityClass;
         this.fileName = entityClass.getSimpleName().toLowerCase() + ".json";
-
         ensureDataDirectoryExists();
     }
+
 
     public void saveEntity(T entity) throws IOException {
         List<T> entities = loadAllEntities();
@@ -105,6 +113,7 @@ public class JsonRepository<T> {
         File dir = new File(dataDir);
         if (!dir.exists()) {
             dir.mkdirs();
+            log.debug("Created data directory: {}", dataDir);
         }
     }
 }

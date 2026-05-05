@@ -1,8 +1,8 @@
 {
   "apiKey": "your_apiKey",
   "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-  "qwen" : {
-    "model": "qwen3.5-plus-2026-02-15",
+  "qwen": {
+    "model": "qwen3-max",
     "maxTokens": 512,
     "temperature": 0.0,
     "topP": 0.01,
@@ -18,7 +18,7 @@
     "repetitionPenalty": 1.1
   },
   "vector": {
-    "model": "qwen3-vl-embedding",
+    "model": "text-embedding-v4",
     "dimension": 768
   },
   "weight": {
