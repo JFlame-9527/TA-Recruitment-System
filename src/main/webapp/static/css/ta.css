@@ -205,6 +205,120 @@ body {
     border-bottom: 2px solid #e3f2fd;
 }
 
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e3f2fd;
+}
+
+.page-header .page-title {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    white-space: nowrap;
+}
+
+.filter-select {
+    padding: 8px 16px;
+    border: 2px solid #e3f2fd;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    outline: none;
+    min-width: 140px;
+}
+
+.filter-select:focus {
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+.filter-select:hover {
+    border-color: #1976d2;
+}
+
+.search-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 2px solid #e3f2fd;
+}
+
+.search-key-select {
+    padding: 8px 16px;
+    border: 2px solid #e3f2fd;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    outline: none;
+    min-width: 140px;
+}
+
+.search-key-select:focus {
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+.search-key-select:hover {
+    border-color: #1976d2;
+}
+
+.order-select {
+    padding: 8px 16px;
+    border: 2px solid #e3f2fd;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    outline: none;
+    min-width: 160px;
+}
+
+.order-select:focus {
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+.order-select:hover {
+    border-color: #1976d2;
+}
+
 .applied-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -446,6 +560,23 @@ body {
     .nav-menu {
         flex-wrap: wrap;
         justify-content: center;
+    }
+
+    .page-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+
+    .filter-controls {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .search-controls {
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .applied-list {
