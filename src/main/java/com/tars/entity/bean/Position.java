@@ -33,6 +33,10 @@ public class Position {
 
     private int duration;
 
+    private int minGrade = -1;
+
+    private int maxGrade = Integer.MAX_VALUE;
+
     private int requiredNum;
 
     private int offeredNum;
@@ -54,6 +58,8 @@ public class Position {
     private Timestamp updateAt;
 
     private int status; // 0-opened, 1-filled, 2-closed, 3-withdrawn
+
+    private String portraitId;
 
     public Position() {
         this.id = UUID.randomUUID().toString();

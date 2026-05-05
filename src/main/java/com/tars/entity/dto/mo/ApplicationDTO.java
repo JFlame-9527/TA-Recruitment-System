@@ -22,7 +22,9 @@ public class ApplicationDTO {
 
     private String major;
 
-    private String grade;
+    private String degree;
+
+    private int year;
 
     private Timestamp applyAt;
 

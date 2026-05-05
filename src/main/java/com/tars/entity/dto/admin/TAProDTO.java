@@ -27,7 +27,9 @@ public class TAProDTO {
 
     private String major;
 
-    private String grade;
+    private String degree;
+
+    private int year;
 
     private List<String> skills;
 

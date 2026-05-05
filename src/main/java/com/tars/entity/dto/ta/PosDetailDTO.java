@@ -29,6 +29,10 @@ public class PosDetailDTO {
 
     private int duration;
 
+    private int minGrade;
+
+    private int maxGrade;
+
     private int requiredNum;
 
     private int offeredNum;

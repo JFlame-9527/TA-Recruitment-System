@@ -23,13 +23,17 @@ public class TAProfile {
 
     private String gender;
 
-    private String age;
+    private int age;
 
     private String college;
 
     private String major;
 
-    private String grade;
+    private String degree; // BACHELOR, MASTER, PHD
+
+    private int year;
+
+    private int grade;
 
     private List<String> skills;
 
@@ -45,9 +49,33 @@ public class TAProfile {
 
     private Timestamp updateAt;
 
+    private String portraitId;
+
+    private float maxWeeklyWorkload = 20.0f;
+
     public TAProfile() {
         this.id = UUID.randomUUID().toString();
         this.createAt = Timestamp.valueOf(LocalDateTime.now());
         this.updateAt = Timestamp.valueOf(LocalDateTime.now());
+    }
+
+    public void setDegree(String degree) {
+        this.degree = degree;
+        setGrade();
+    }
+
+    public void setYear(int year) {
+        this.year = year;
+        setGrade();
+    }
+
+    private void setGrade() {
+        int offset = switch (degree.toUpperCase()) {
+            case "BACHELOR" -> 0;
+            case "MASTER" -> 10;
+            case "PHD" -> 20;
+            default -> 0;
+        };
+        this.grade = year + offset;
     }
 }
