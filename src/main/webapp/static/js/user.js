@@ -46,7 +46,7 @@ $(document).ready(function() {
     // Click "Forgot Password"
     $('#forgotPwd').on('click', function(e) {
         e.preventDefault();
-        showMessageModal('Reset Password', 'Please contact administrator to reset password, or enter your email to receive reset link. (Feature pending)');
+        showMessageModal('Reset Password', 'Please contact administrator to reset password');
     });
 
     // Click "Register Account" - open register modal
@@ -150,7 +150,7 @@ $(document).ready(function() {
         
         const username = $('#username').val().trim();
         const password = $('#password').val();
-        const $btn = $('.btn-login');
+        const $btn = $('#btn-login.btn-login');
         const originalText = $btn.text();
         
         if(!username || !password) {
@@ -173,11 +173,10 @@ $(document).ready(function() {
             });
             
             if (response.success) {
-                $btn.text('Login successful! Redirecting...');
                 setTimeout(() => {
                     window.location.href = response.data.redirectUrl;
                 }, 500);
-            } else {
+            } else{
                 showMessageModal('Login Failed', response.message || 'Invalid username or password');
                 $btn.text(originalText).prop('disabled', false);
                 $('#password').val('');

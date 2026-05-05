@@ -61,11 +61,11 @@ public class UserServlet extends BaseServlet {
     private String getRedirectUrl(int role) {
         switch (role) {
             case 0:
-                return "adminServlet?action=listAccounts";
+                return "adminServlet?action=listAccounts&filter=all&order=name";
             case 1:
-                return "taServlet?action=listApplied&page=1";
+                return "taServlet?action=listApplied&page=1&filter=all&order=applyAt";
             case 2:
-                return "moServlet?action=listPosition&page=1";
+                return "moServlet?action=listPosition&page=1&filter=all&order=postDate";
             default:
                 return "views/user/login.jsp";
         }
