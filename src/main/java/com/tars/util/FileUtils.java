@@ -3,8 +3,11 @@ package com.tars.util;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -16,8 +19,10 @@ import java.util.List;
 import java.util.UUID;
 
 /**
+ * File upload and management utilities
+ *
  * @author Jflame
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2026/4/2
  */
 @Slf4j
@@ -35,27 +40,20 @@ public class FileUtils {
     // Maximum file size (10MB)
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-    // Upload directory name under web root
-    private static final String UPLOAD_DIR = "upload";
+    @Getter
+    @Setter
+    private static String fileDir;
+
 
     /**
-     * Securely save uploaded PDF file to web root /upload/{subDir} directory.
+     * Securely save uploaded PDF file to upload directory.
      *
      * @param part The uploaded file part from multipart request
-     * @param webRootPath The web application root path (from getServletContext().getRealPath(""))
      * @param subDir Subdirectory under uploads folder (e.g., "resumes", "photos")
      * @return Relative path for database storage (e.g., "resumes/uuid.pdf")
      * @throws Exception if validation fails or IO error occurs
-     * <p>
-     * Usage example:
-     * <pre>{@code
-     * Part resumePart = getFilePart(req, "resume");
-     * String webRootPath = getServletContext().getRealPath("");
-     * String resumePath = FileUploadUtil.savePdfFile(resumePart, webRootPath, "resumes");
-     * profile.setResumePath(resumePath); // Store in database
-     * }</pre>
      */
-    public static String savePdfFile(Part part, String webRootPath, String subDir) throws Exception {
+    public static String savePdfFile(Part part, String subDir) throws Exception {
         // Validate part
         if (part == null || part.getSize() == 0) {
             throw new IllegalArgumentException("No file uploaded");
@@ -88,20 +86,20 @@ public class FileUtils {
         String safeFileName = UUID.randomUUID() + ALLOWED_EXTENSION;
 
         // Security check 4: Build upload directory path
-        String uploadDirPath = Paths.get(webRootPath, UPLOAD_DIR, subDir).toString();
-        Path uploadDir = Paths.get(uploadDirPath);
+        String uploadDirPath = Paths.get(getFileDir(), subDir).toString();
+        Path uploadDirectory = Paths.get(uploadDirPath);
 
         // Create directory if it doesn't exist
-        if (!Files.exists(uploadDir)) {
-            Files.createDirectories(uploadDir);
+        if (!Files.exists(uploadDirectory)) {
+            Files.createDirectories(uploadDirectory);
             log.info("Created upload directory: {}", uploadDirPath);
         }
 
         // Security check 5: Build and validate file path
-        Path filePath = uploadDir.resolve(safeFileName);
+        Path filePath = uploadDirectory.resolve(safeFileName);
 
         // Ensure the resolved path is within upload directory (prevent path traversal)
-        if (!filePath.normalize().startsWith(uploadDir.normalize())) {
+        if (!filePath.normalize().startsWith(uploadDirectory.normalize())) {
             throw new SecurityException("Invalid file path attempt - path traversal detected");
         }
 
@@ -128,14 +126,6 @@ public class FileUtils {
      * @param req HttpServletRequest containing the multipart request
      * @param fieldName The form field name (e.g., "resume", "photo")
      * @return The Part object if found with content, null otherwise
-     * <p>
-     * Usage example:
-     * <pre>{@code
-     * Part resumePart = FileUploadUtil.getFilePart(req, "resume");
-     * if (resumePart != null) {
-     *     // Process file upload
-     * }
-     * }</pre>
      */
     public static Part getFilePart(HttpServletRequest req, String fieldName) {
         try {
@@ -153,19 +143,10 @@ public class FileUtils {
     /**
      * Delete uploaded file from the upload directory.
      *
-     * @param webRootPath The web application root path
      * @param relativePath The relative path stored in database
      * @return true if deleted successfully, false otherwise
-     * <p>
-     * Usage example:
-     * <pre>{@code
-     * String oldResumePath = profile.getResumePath();
-     * if (oldResumePath != null) {
-     *     FileUploadUtil.deleteFile(webRootPath, oldResumePath);
-     * }
-     * }</pre>
      */
-    public static boolean deleteFile(String webRootPath, String relativePath) {
+    public static boolean deleteFile(String relativePath) {
         if (relativePath == null || relativePath.trim().isEmpty()) {
             return false;
         }
@@ -177,11 +158,10 @@ public class FileUtils {
                 return false;
             }
 
-            Path filePath = Paths.get(webRootPath, UPLOAD_DIR, relativePath).normalize();
+            Path filePath = Paths.get(getFileDir(), relativePath).normalize();
 
             // Verify file is within uploads directory
-            String uploadDirPath = Paths.get(webRootPath, UPLOAD_DIR).toString();
-            if (!filePath.normalize().startsWith(Paths.get(uploadDirPath).normalize())) {
+            if (!filePath.normalize().startsWith(Paths.get(getFileDir()).normalize())) {
                 log.warn("Attempted to delete file outside uploads directory: {}", relativePath);
                 return false;
             }
@@ -203,11 +183,10 @@ public class FileUtils {
     /**
      * Check if file exists in the upload directory.
      *
-     * @param webRootPath The web application root path
      * @param relativePath The relative path stored in database
      * @return true if file exists, false otherwise
      */
-    public static boolean fileExists(String webRootPath, String relativePath) {
+    public static boolean fileExists(String relativePath) {
         if (relativePath == null || relativePath.trim().isEmpty()) {
             return false;
         }
@@ -217,10 +196,9 @@ public class FileUtils {
                 return false;
             }
 
-            Path filePath = Paths.get(webRootPath, UPLOAD_DIR, relativePath).normalize();
-            String uploadDirPath = Paths.get(webRootPath, UPLOAD_DIR).toString();
+            Path filePath = Paths.get(getFileDir(), relativePath).normalize();
 
-            if (!filePath.normalize().startsWith(Paths.get(uploadDirPath).normalize())) {
+            if (!filePath.normalize().startsWith(Paths.get(getFileDir()).normalize())) {
                 return false;
             }
 
@@ -233,23 +211,10 @@ public class FileUtils {
 
     /**
      * Get the web-accessible URL for an uploaded file.
-     * Converts database relative path to web URL.
      *
      * @param contextPath The web application context path (from req.getContextPath())
      * @param relativePath The relative path stored in database (e.g., "resumes/uuid.pdf")
-     * @return Web-accessible URL (e.g., "/app/uploads/resumes/uuid.pdf"), or null if invalid
-     * <p>
-     * Usage example:
-     * <pre>{@code
-     * TAProfile profile = taService.getProfile(userId);
-     * String resumeUrl = FileUploadUtil.getFileUrl(req.getContextPath(), profile.getResumePath());
-     * req.setAttribute("resumeUrl", resumeUrl);
-     * }</pre>
-     *
-     * JSP usage:
-     * <pre>{@code
-     * <a href="${resumeUrl}" target="_blank">View Resume</a>
-     * }</pre>
+     * @return Web-accessible URL (e.g., "/app/upload/resumes/uuid.pdf"), or null if invalid
      */
     public static String getFileUrl(String contextPath, String relativePath) {
         if (relativePath == null || relativePath.trim().isEmpty()) {
@@ -270,49 +235,19 @@ public class FileUtils {
             normalizedPath = normalizedPath.substring(1);
         }
 
-        return contextPath + "/" + UPLOAD_DIR + "/" + normalizedPath;
+        return contextPath + "/" + getFileDir() + "/" + normalizedPath;
     }
 
     /**
      * Stream a file to HTTP response for secure download/view.
-     * This method serves files without exposing physical file system paths.
      *
      * @param req HttpServletRequest (used for determining download mode)
      * @param resp HttpServletResponse (used for streaming file content)
-     * @param webRootPath The web application root path
      * @param relativePath The relative path stored in database
      * @throws IOException if IO error occurs
-     * <p>
-     * Usage example in Servlet:
-     * <pre>{@code
-     * private void downloadResume(HttpServletRequest req, HttpServletResponse resp)
-     *         throws IOException {
-     *     String fileName = req.getParameter("file");
-     *     String sanitizedPath = FileUploadUtil.sanitizePath(fileName);
-     *     if (sanitizedPath == null) {
-     *         resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid file path");
-     *         return;
-     *     }
-     *     String webRootPath = getServletContext().getRealPath("");
-     *     FileUploadUtil.serveFile(req, resp, webRootPath, sanitizedPath);
-     * }
-     * }</pre>
-     *
-     * JSP links:
-     * <pre>{@code
-     * <!-- View in browser (inline) -->
-     * <a href="${pageContext.request.contextPath}/taServlet?action=downloadResume&file=${profile.resumePath}">
-     *     View Resume
-     * </a>
-     *
-     * <!-- Download file (attachment) -->
-     * <a href="${pageContext.request.contextPath}/taServlet?action=downloadResume&file=${profile.resumePath}&download=true">
-     *     Download Resume
-     * </a>
-     * }</pre>
      */
     public static void serveFile(HttpServletRequest req, HttpServletResponse resp,
-                                 String webRootPath, String relativePath) throws IOException {
+                                 String relativePath) throws IOException {
 
         // Validate relative path
         if (relativePath == null || relativePath.trim().isEmpty()) {
@@ -328,11 +263,11 @@ public class FileUtils {
         }
 
         // Build absolute file path
-        Path filePath = Paths.get(webRootPath, UPLOAD_DIR, relativePath).normalize();
+        Path filePath = Paths.get(getFileDir(), relativePath).normalize();
 
         // Security check: Verify file is within uploads directory
-        Path uploadsDir = Paths.get(webRootPath, UPLOAD_DIR).normalize();
-        if (!filePath.normalize().startsWith(uploadsDir)) {
+        Path uploadsDirectory = Paths.get(getFileDir()).normalize();
+        if (!filePath.normalize().startsWith(uploadsDirectory)) {
             log.warn("Attempted access to file outside uploads directory: {}", relativePath);
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
             return;
@@ -385,22 +320,9 @@ public class FileUtils {
 
     /**
      * Validate and sanitize file path for storage and access.
-     * Only allows alphanumeric characters, dashes, underscores, dots, and forward slashes.
-     * Rejects paths containing ".." to prevent path traversal attacks.
      *
      * @param path The path to validate
      * @return Sanitized path or null if invalid
-     * <p>
-     * Usage example:
-     * <pre>{@code
-     * String fileName = req.getParameter("file");
-     * String sanitizedPath = FileUploadUtil.sanitizePath(fileName);
-     * if (sanitizedPath == null) {
-     *     resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid file path");
-     *     return;
-     * }
-     * // Now safe to use sanitizedPath
-     * }</pre>
      */
     public static String sanitizePath(String path) {
         if (path == null || path.trim().isEmpty()) {
@@ -419,6 +341,9 @@ public class FileUtils {
         // Normalize slashes first (convert backslashes to forward slashes)
         path = path.replace("\\", "/");
 
+        // Normalize multiple consecutive slashes to single slash
+        path = path.replaceAll("/+", "/");
+
         // Only allow safe characters (alphanumeric, dash, underscore, dot, slash)
         if (!path.matches("[a-zA-Z0-9_\\-./]+")) {
             log.warn("Invalid characters in path: {}", path);
@@ -431,5 +356,46 @@ public class FileUtils {
         }
 
         return path;
+    }
+
+    /**
+     * Get File object from relative path stored in database.
+     *
+     * @param relativePath The relative path stored in database (e.g., "resumes/uuid.pdf")
+     * @return File object if exists, null otherwise
+     */
+    public static File getFileFromRelativePath(String relativePath) {
+        if (relativePath == null || relativePath.trim().isEmpty()) {
+            return null;
+        }
+
+        try {
+            // Prevent path traversal attacks
+            if (relativePath.contains("..")) {
+                log.warn("Attempted path traversal in getFileFromRelativePath: {}", relativePath);
+                return null;
+            }
+
+            Path filePath = Paths.get(getFileDir(), relativePath).normalize();
+
+            // Verify file is within uploads directory
+            if (!filePath.normalize().startsWith(Paths.get(getFileDir()).normalize())) {
+                log.warn("Attempted to access file outside uploads directory: {}", relativePath);
+                return null;
+            }
+
+            File file = filePath.toFile();
+            
+            if (file.exists() && file.isFile()) {
+                log.debug("File found: {}", filePath);
+                return file;
+            } else {
+                log.warn("File does not exist or is not a file: {}", filePath);
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("Error getting file from relative path: {}", relativePath, e);
+            return null;
+        }
     }
 }

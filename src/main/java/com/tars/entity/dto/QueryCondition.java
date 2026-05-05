@@ -10,13 +10,13 @@ import lombok.Data;
 @Data
 public class QueryCondition {
 
-    private String filter;
+    private String filter = "";
 
-    private String order;
+    private String order = "";
 
-    private String key;
+    private String key = "";
 
-    private String search;
+    private String search = "";
 
     private Integer page = 1;
 

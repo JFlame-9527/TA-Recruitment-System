@@ -74,20 +74,49 @@ public class FileParser {
      * @return fileId string for AI processing
      */
     public String extractFileId(File file) {
+        if (file == null || !file.exists()) {
+            throw new IllegalArgumentException("File does not exist: " + (file != null ? file.getAbsolutePath() : "null"));
+        }
+        
         validateFile(file);
-
+        
         String fileName = file.getName();
         log.info("Uploading file: {}", fileName);
 
-        try {
-            String fileId = uploadFile(file);
-            log.info("File uploaded successfully, fileId: {}", fileId);
-            return fileId;
-
-        } catch (Exception e) {
-            log.error("File upload failed for: {}", fileName, e);
-            throw new RuntimeException("Failed to upload file: " + e.getMessage(), e);
+        int maxRetries = 3;
+        int retryCount = 0;
+        
+        while (retryCount < maxRetries) {
+            try {
+                String fileId = uploadFile(file);
+                log.info("File uploaded successfully, fileId: {}", fileId);
+                return fileId;
+            } catch (Exception e) {
+                retryCount++;
+                
+                if (e.getMessage() != null && e.getMessage().contains("429")) {
+                    if (retryCount < maxRetries) {
+                        long waitTime = 3000;
+                        log.warn("Rate limit exceeded. Retry {}/{} after {}ms...", retryCount, maxRetries, waitTime);
+                        
+                        try {
+                            Thread.sleep(waitTime);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException("Upload interrupted", ie);
+                        }
+                    } else {
+                        log.error("Max retries exceeded for file: {}", fileName, e);
+                        throw new RuntimeException("Failed to upload file after " + maxRetries + " retries: " + e.getMessage(), e);
+                    }
+                } else {
+                    log.error("File upload failed for: {}", fileName, e);
+                    throw new RuntimeException("Failed to upload file: " + e.getMessage(), e);
+                }
+            }
         }
+        
+        throw new RuntimeException("Failed to upload file: Max retries exceeded");
     }
 
     /**
@@ -123,8 +152,8 @@ public class FileParser {
             throw new IllegalArgumentException("File cannot be empty");
         }
         String fileName = file.getName();
-        if (!fileName.toLowerCase().matches(".*\\.(pdf|doc|docx|txt)$")) {
-            throw new IllegalArgumentException("Only PDF, DOC, DOCX, TXT files are supported");
+        if (!fileName.toLowerCase().matches(".*\\.(pdf|doc|docx|txt|md)$")) {
+            throw new IllegalArgumentException("Only PDF, DOC, DOCX, TXT, MD files are supported");
         }
     }
 
