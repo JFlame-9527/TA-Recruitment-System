@@ -54,7 +54,7 @@
                         <a href="#" class="link-text" id="registerLink">register</a>
                     </div>
 
-                    <button type="submit" class="btn-login">LOGIN</button>
+                    <button type="submit" class="btn-login" id="btn-login">LOGIN</button>
                 </form>
             </div>
         </div>
@@ -76,7 +76,7 @@
                 <input type="password" id="reg_checkpassword" name="checkpassword" class="form-control" placeholder="Confirm Password" required>
             </div>
             <div id="registerError" class="alert alert-danger" style="display: none;"></div>
-            <button type="submit" class="btn-login">Register</button>
+            <button type="submit" class="btn-login" id="btn-register">Register</button>
         </form>
     </div>
 </div>
