@@ -71,19 +71,17 @@ $(document).ready(function() {
         }
     });
 
-    // Pagination click handler - detect page context by checking DOM elements
-    $(document).on('click', '.page-item:not(.disabled,.active)', function(e) {
-        e.preventDefault();
-        const page = $(this).data('page');
-        if (page) {
-            // Detect page context by checking unique elements
-            if ($('.position-list').length > 0 || $('#searchInput').length > 0) {
-                // Positions page
-                window.location.href = 'taServlet?action=listPositions&page=' + page;
-            } else if ($('.applied-list').length > 0) {
-                // Applied list page (home)
-                window.location.href = 'taServlet?action=listApplied&page=' + page;
-            }
+    // Filter and order change handlers for Home page
+    $('#filterSelect, #orderSelect').on('change', function() {
+        if ($('.applied-list').length > 0) {
+            applyFiltersAndOrder('listApplied');
+        }
+    });
+
+    // Filter, order, and search key change handlers for Positions page
+    $('#filterSelect, #orderSelect, #searchKeySelect').on('change', function() {
+        if ($('.position-list').length > 0) {
+            applyFiltersAndOrder('listPositions');
         }
     });
 
@@ -99,13 +97,46 @@ $(document).ready(function() {
     });
 
     function searchPositions() {
-        const searchTerm = $('#searchInput').val();
-        if (searchTerm && searchTerm.trim() !== '') {
-            showMessage('Notice', 'Search functionality is not available yet');
-        } else {
-            window.location.href = 'taServlet?action=listPositions&page=1';
-        }
+        applyFiltersAndOrder('listPositions');
     }
+
+    function applyFiltersAndOrder(action) {
+        const filter = $('#filterSelect').val() || 'all';
+        const order = $('#orderSelect').val() || (action === 'listApplied' ? 'applyAt' : 'postDate');
+        const search = $('#searchInput').val() || '';
+        const key = $('#searchKeySelect').val() || 'title';
+
+        let url = 'taServlet?action=' + action + '&page=1&filter=' + encodeURIComponent(filter) + '&order=' + encodeURIComponent(order);
+
+        if (action === 'listPositions') {
+            url += '&key=' + encodeURIComponent(key) + '&search=' + encodeURIComponent(search);
+        }
+
+        window.location.href = url;
+    }
+
+    // Pagination click handler - detect page context by checking DOM elements
+    $(document).on('click', '.page-item:not(.disabled,.active)', function(e) {
+        e.preventDefault();
+        const page = $(this).data('page');
+        if (page) {
+            const filter = $('#filterSelect').val() || 'all';
+            const order = $('#orderSelect').val() || 'applyAt';
+            const search = $('#searchInput').val() || '';
+            const key = $('#searchKeySelect').val() || 'title';
+
+            // Detect page context by checking unique elements
+            if ($('.position-list').length > 0 || $('#searchInput').length > 0) {
+                // Positions page
+                let url = 'taServlet?action=listPositions&page=' + page + '&filter=' + encodeURIComponent(filter) + '&order=' + encodeURIComponent(order) + '&key=' + encodeURIComponent(key) + '&search=' + encodeURIComponent(search);
+                window.location.href = url;
+            } else if ($('.applied-list').length > 0) {
+                // Applied list page (home)
+                let url = 'taServlet?action=listApplied&page=' + page + '&filter=' + encodeURIComponent(filter) + '&order=' + encodeURIComponent(order);
+                window.location.href = url;
+            }
+        }
+    });
 
     // Show message modal
     function showMessage(title, message) {
@@ -139,24 +170,36 @@ $(document).ready(function() {
     });
 });
 
-// Go back to previous page
+// Go back to previous page with filters
 function goBack(from, page) {
+    const filter = $('#filterSelect').val() || 'all';
+    const order = $('#orderSelect').val() || (from === 'applied' ? 'applyAt' : 'postDate');
+    const search = $('#searchInput').val() || '';
+    const key = $('#searchKeySelect').val() || 'title';
+
     if (from === 'applied') {
-        window.location.href = 'taServlet?action=listApplied&page=' + page;
+        window.location.href = 'taServlet?action=listApplied&page=' + page + '&filter=' + encodeURIComponent(filter) + '&order=' + encodeURIComponent(order);
     } else {
-        window.location.href = 'taServlet?action=listPositions&page=' + page;
+        window.location.href = 'taServlet?action=listPositions&page=' + page + '&filter=' + encodeURIComponent(filter) + '&order=' + encodeURIComponent(order) + '&key=' + encodeURIComponent(key) + '&search=' + encodeURIComponent(search);
     }
 }
 
 // View application from applied list (home page)
 function viewApplication(appId, posId, page) {
-    let url = 'taServlet?action=viewPosition&posId=' + posId + '&appId=' + appId + '&page=' + page + '&from=applied';
+    const filter = $('#filterSelect').val() || 'all';
+    const order = $('#orderSelect').val() || 'applyAt';
+    let url = 'taServlet?action=viewPosition&posId=' + posId + '&appId=' + appId + '&page=' + page + '&from=applied&filter=' + encodeURIComponent(filter) + '&order=' + encodeURIComponent(order);
     window.location.href = url;
 }
 
 // View position details from positions list
 function viewPosition(posId, appId, page) {
-    let url = 'taServlet?action=viewPosition&posId=' + posId + '&page=' + page + '&from=positions';
+    const filter = $('#filterSelect').val() || 'all';
+    const order = $('#orderSelect').val() || 'postDate';
+    const search = $('#searchInput').val() || '';
+    const key = $('#searchKeySelect').val() || 'title';
+
+    let url = 'taServlet?action=viewPosition&posId=' + posId + '&page=' + page + '&from=positions&filter=' + encodeURIComponent(filter) + '&order=' + encodeURIComponent(order) + '&key=' + encodeURIComponent(key) + '&search=' + encodeURIComponent(search);
     if (appId && appId.trim() !== '') {
         url += '&appId=' + appId;
     }

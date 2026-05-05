@@ -1,6 +1,6 @@
 <%--
   @author: QiheSun
-  @Since: 2026/4/4
+  @Since: 2026/5/5
 --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
@@ -34,8 +34,8 @@
             </div>
 
             <nav class="nav-menu">
-                <a href="taServlet?action=listApplied&page=1" class="nav-item">Home</a>
-                <a href="taServlet?action=listPositions&page=1" class="nav-item">Position</a>
+                <a href="taServlet?action=listApplied&page=1&filter=all&order=applyAt" class="nav-item">Home</a>
+                <a href="taServlet?action=listPositions&page=1&filter=all&order=postDate" class="nav-item">Position</a>
                 <a href="taServlet?action=getProfile" class="nav-item active">Profile</a>
             </nav>
         </div>
@@ -123,7 +123,8 @@
                                     data-age="${profile.age}"
                                     data-college="${profile.college}"
                                     data-major="${profile.major}"
-                                    data-grade="${profile.grade}"
+                                    data-degree="${profile.degree}"
+                                    data-year="${profile.year}"
                                     data-email="${profile.email}"
                                     data-phone="${profile.phone}"
                                     data-resume-name="${profile.resumeName}">Edit Profile</button>
