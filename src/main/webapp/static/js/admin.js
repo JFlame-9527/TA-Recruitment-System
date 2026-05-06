@@ -44,15 +44,26 @@ $(document).ready(function() {
         }
     });
 
-    $('#editTaForm').submit(function(e) {
-        e.preventDefault();
-        submitEditTaForm();
-    });
+    if ($('#editTaForm').length > 0) {
+        $('#editTaForm').submit(function(e) {
+            e.preventDefault();
+            submitEditTaForm();
+        });
+    }
 
-    $('#editMoForm').submit(function(e) {
-        e.preventDefault();
-        submitEditMoForm();
-    });
+    if ($('#editMoForm').length > 0) {
+        $('#editMoForm').submit(function(e) {
+            e.preventDefault();
+            submitEditMoForm();
+        });
+    }
+
+    if ($('#createMoForm').length > 0) {
+        $('#createMoForm').submit(function(e) {
+            e.preventDefault();
+            submitCreateMoForm();
+        });
+    }
 });
 
 function switchTab(role) {
@@ -400,20 +411,19 @@ function submitEditTaForm() {
 
     const requests = [];
 
-    if (newPassword) {
-        requests.push(
-            $.ajax({
-                url: 'adminServlet',
-                type: 'POST',
-                data: {
-                    action: 'resetPassword',
-                    userId: userId,
-                    newPassword: newPassword
-                },
-                dataType: 'json'
-            })
-        );
-    }
+    requests.push(
+        $.ajax({
+            url: 'adminServlet',
+            type: 'POST',
+            data: {
+                action: 'updateUser',
+                id: userId,
+                name: username,
+                newPassword: newPassword
+            },
+            dataType: 'json'
+        })
+    );
 
     Promise.all(requests)
         .then(() => {
@@ -489,20 +499,19 @@ function submitEditMoForm() {
 
     const requests = [];
 
-    if (newPassword) {
-        requests.push(
-            $.ajax({
-                url: 'adminServlet',
-                type: 'POST',
-                data: {
-                    action: 'resetPassword',
-                    userId: userId,
-                    newPassword: newPassword
-                },
-                dataType: 'json'
-            })
-        );
-    }
+    requests.push(
+        $.ajax({
+            url: 'adminServlet',
+            type: 'POST',
+            data: {
+                action: 'updateUser',
+                id: userId,
+                name: username,
+                password: newPassword
+            },
+            dataType: 'json'
+        })
+    );
 
     if (profileId) {
         requests.push(
@@ -599,4 +608,92 @@ function escapeHtml(text) {
         "'": '&#039;'
     };
     return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+function submitCreateMoForm() {
+    const formData = {
+        username: $('#username').val().trim(),
+        password: $('#password').val(),
+        name: $('#name').val().trim(),
+        college: $('#college').val().trim(),
+        email: $('#email').val().trim(),
+        phone: $('#phone').val().trim()
+    };
+
+    if (!validateCreateMoForm(formData)) {
+        return;
+    }
+
+    $.ajax({
+        url: 'adminServlet',
+        type: 'POST',
+        data: {
+            action: 'createMOAccount',
+            username: formData.username,
+            password: formData.password,
+            name: formData.name,
+            college: formData.college,
+            email: formData.email,
+            phone: formData.phone
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                showCreateMoSuccess('MO account created successfully!');
+                $('#createMoForm')[0].reset();
+            } else {
+                showCreateMoError(response.message || 'Failed to create MO account');
+            }
+        },
+        error: function(xhr) {
+            const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Network error occurred';
+            showCreateMoError(errorMsg);
+        }
+    });
+}
+
+function validateCreateMoForm(data) {
+    if (!data.username) {
+        showCreateMoError('Username is required');
+        return false;
+    }
+
+    if (!data.password) {
+        showCreateMoError('Password is required');
+        return false;
+    }
+
+    if (data.password.length < 6) {
+        showCreateMoError('Password must be at least 6 characters');
+        return false;
+    }
+
+    if (!data.name) {
+        showCreateMoError('Full name is required');
+        return false;
+    }
+
+    if (data.email && !isValidEmail(data.email)) {
+        showCreateMoError('Please enter a valid email address');
+        return false;
+    }
+
+    return true;
+}
+
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+function showCreateMoError(message) {
+    $('#formError').text(message).show();
+    $('#formSuccess').hide();
+    $('html, body').animate({ scrollTop: 0 }, 'fast');
+}
+
+function showCreateMoSuccess(message) {
+    $('#formSuccess').text(message).show();
+    $('#formError').hide();
+    $('html, body').animate({ scrollTop: 0 }, 'fast');
 }

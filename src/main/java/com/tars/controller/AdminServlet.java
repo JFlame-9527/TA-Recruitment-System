@@ -1,6 +1,8 @@
 package com.tars.controller;
 
 import com.tars.entity.bean.MOProfile;
+import com.tars.entity.bean.User;
+import com.tars.entity.dto.QueryCondition;
 import com.tars.entity.dto.admin.MOProDTO;
 import com.tars.entity.dto.admin.TAProDTO;
 import com.tars.entity.dto.admin.UserDetailDTO;
@@ -22,8 +24,8 @@ import java.util.Map;
 
 /**
  * @author wangyue
- * @version 1.0.0
- * @since 2026/3/29
+ * @version 2.0.0
+ * @since 2026/4/14
  */
 @Slf4j
 @WebServlet(name = "AdminServlet", value = "/adminServlet")
@@ -47,19 +49,20 @@ public class AdminServlet extends BaseServlet {
         if (!verifyAdmin(req, resp, userObj)) return;
 
         String adminId = ((UserDTO)userObj).getId();
+        QueryCondition condition = BeanUtils.mapFromReq(req, QueryCondition.class);
 
-        List<UserDetailDTO> taList = adminService.getAccountsByRole(1, 1, adminId);
-        long taTotalPages = adminService.getAccountPages(1, adminId);
+        List<UserDetailDTO> taList = adminService.getAccountsByRole(1, condition, adminId);
+        long taTotalPages = adminService.getAccountPages(1, condition, adminId);
 
-        List<UserDetailDTO> moList = adminService.getAccountsByRole(2, 1, adminId);
-        long moTotalPages = adminService.getAccountPages(2, adminId);
+        List<UserDetailDTO> moList = adminService.getAccountsByRole(2, condition, adminId);
+        long moTotalPages = adminService.getAccountPages(2, condition, adminId);
 
         req.setAttribute("taList", taList);
-        req.setAttribute("taCurrentPage", 1);
+        req.setAttribute("taCondition", condition);
         req.setAttribute("taTotalPages", taTotalPages);
 
         req.setAttribute("moList", moList);
-        req.setAttribute("moCurrentPage", 1);
+        req.setAttribute("moCondition", condition);
         req.setAttribute("moTotalPages", moTotalPages);
 
         req.setAttribute("activeRole", 1);
@@ -74,15 +77,15 @@ public class AdminServlet extends BaseServlet {
 
         String roleParam = req.getParameter("role");
         int role = Integer.parseInt(roleParam);
-        String pageParam = req.getParameter("page");
-        int page = Integer.parseInt(pageParam);
 
-        List<UserDetailDTO> accounts = adminService.getAccountsByRole(role, page, adminId);
+        QueryCondition condition = BeanUtils.mapFromReq(req, QueryCondition.class);
+
+        List<UserDetailDTO> accounts = adminService.getAccountsByRole(role, condition, adminId);
         long totalPages = adminService.getAccountPages(role, adminId);
 
         Map<String, Object> data = new HashMap<>();
         data.put("accounts", accounts);
-        data.put("currentPage", page);
+        data.put("condition", condition);
         data.put("totalPages", totalPages);
 
         RespUtils.writeSuccess(resp, data);
@@ -195,28 +198,75 @@ public class AdminServlet extends BaseServlet {
         }
     }
 
-    private void resetPassword(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    private void updateUser(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyAdmin(req, resp, userObj)) return;
 
-        String userId = req.getParameter("userId");
-        String newPassword = req.getParameter("newPassword");
+        try {
+            String userId = req.getParameter("id");
+            if (userId == null || userId.trim().isEmpty()) {
+                RespUtils.writeError(resp, "User ID is required", HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            
+            User updatedUser = BeanUtils.mapFromReq(req, User.class);
 
-        if (userId == null || userId.trim().isEmpty()) {
-            RespUtils.writeError(resp, "User ID is required", HttpServletResponse.SC_BAD_REQUEST);
-            return;
+            String password = updatedUser.getPassword();
+            if (password != null && !password.trim().isEmpty()) {
+                if (password.length() < 6) {
+                    RespUtils.writeError(resp, "Password must be at least 6 characters", HttpServletResponse.SC_BAD_REQUEST);
+                    return;
+                }
+                updatedUser.setPassword(adminService.encryptPassword(password));
+            }
+
+            boolean success = adminService.updateUser(updatedUser);
+            if (success) {
+                RespUtils.writeSuccess(resp, "User updated successfully");
+            } else {
+                RespUtils.writeError(resp, "Failed to update user", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }
+        } catch (Exception e) {
+            log.error("Error updating user", e);
+            RespUtils.writeError(resp, "Error updating user: " + e.getMessage(), HttpServletResponse.SC_BAD_REQUEST);
         }
+    }
 
-        if (newPassword == null || newPassword.length() < 6) {
-            RespUtils.writeError(resp, "Password must be at least 6 characters", HttpServletResponse.SC_BAD_REQUEST);
-            return;
-        }
+    private void createMOAccount(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        Object userObj = req.getSession().getAttribute("user");
+        if (!verifyAdmin(req, resp, userObj)) return;
 
-        boolean success = adminService.resetPassword(userId, newPassword);
-        if (success) {
-            RespUtils.writeSuccess(resp, "Password reset successfully");
-        } else {
-            RespUtils.writeError(resp, "Failed to reset password", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        try {
+            Map<String, String> userParamMapping = new HashMap<>();
+            userParamMapping.put("username", "name");
+            
+            User mo = BeanUtils.mapFromReq(req, User.class, userParamMapping);
+            
+            if (mo.getName() == null || mo.getName().trim().isEmpty()) {
+                RespUtils.writeError(resp, "Username is required", HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+
+            String password = req.getParameter("password");
+            if (password == null || password.length() < 6) {
+                RespUtils.writeError(resp, "Password must be at least 6 characters", HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            
+            mo.setPassword(adminService.encryptPassword(password));
+            mo.setStatus(0);
+
+            MOProfile moProfile = BeanUtils.mapFromReq(req, MOProfile.class);
+
+            boolean success = adminService.createMOAccount(mo, moProfile);
+            if (success) {
+                RespUtils.writeSuccess(resp, "MO account created successfully");
+            } else {
+                RespUtils.writeError(resp, "Failed to create MO account", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            }
+        } catch (Exception e) {
+            log.error("Error creating MO account", e);
+            RespUtils.writeError(resp, "Error creating MO account: " + e.getMessage(), HttpServletResponse.SC_BAD_REQUEST);
         }
     }
 

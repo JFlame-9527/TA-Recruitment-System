@@ -1,10 +1,7 @@
 package com.tars.service;
 
-import com.tars.entity.bean.Application;
-import com.tars.entity.bean.MOProfile;
-import com.tars.entity.bean.Position;
-import com.tars.entity.bean.TAProfile;
-import com.tars.entity.bean.User;
+import com.tars.entity.bean.*;
+import com.tars.entity.dto.QueryCondition;
 import com.tars.entity.dto.admin.MOProDTO;
 import com.tars.entity.dto.admin.TAProDTO;
 import com.tars.entity.dto.admin.UserDetailDTO;
@@ -15,14 +12,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.IOException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * @author wangyue
- * @version 1.0.0
- * @since 2026/3/24
+ * @version 2.0.0
+ * @since 2026/4/14
  */
 @Slf4j
 public class AdminService {
@@ -100,21 +101,10 @@ public class AdminService {
             }
 
             userRepo.deleteEntity(userId);
-            
+
             log.info("delete user success, userId: {}, role: {}", userId, role);
         } catch (IOException e) {
             log.error("delete user failed, userId: {}, error message: {}", userId, e.getMessage());
-            return false;
-        }
-        return true;
-    }
-
-    public boolean updateUser(User user) {
-        try {
-            userRepo.saveEntity(user);
-            log.info("update user success, userId: {}", user.getId());
-        } catch (IOException e) {
-            log.error("update user failed, userId: {}, error message: {}", user.getId(), e.getMessage());
             return false;
         }
         return true;
@@ -153,7 +143,7 @@ public class AdminService {
             String encryptedPassword = DigestUtils.md5Hex(newPassword);
             user.setPassword(encryptedPassword);
             userRepo.saveEntity(user);
-            
+
             log.info("reset password success, userId: {}", userId);
             return true;
         } catch (IOException e) {
@@ -213,6 +203,33 @@ public class AdminService {
         }
     }
 
+    public boolean updateUser(User updatedUser) {
+        try {
+            User existingUser = userRepo.getEntityById(updatedUser.getId());
+            if (existingUser == null) {
+                log.warn("User not found for update, userId: {}", updatedUser.getId());
+                return false;
+            }
+
+            if (updatedUser.getName() != null && !updatedUser.getName().trim().isEmpty()) {
+                existingUser.setName(updatedUser.getName());
+            }
+
+            if (updatedUser.getPassword() != null && !updatedUser.getPassword().trim().isEmpty()) {
+                existingUser.setPassword(updatedUser.getPassword());
+            }
+
+            existingUser.setUpdateAt(Timestamp.valueOf(LocalDateTime.now()));
+
+            userRepo.saveEntity(existingUser);
+            log.info("update user success, userId: {}", existingUser.getId());
+            return true;
+        } catch (IOException e) {
+            log.error("update user failed, userId: {}, error message: {}", updatedUser.getId(), e.getMessage());
+            return false;
+        }
+    }
+
     public boolean createMOAccount(User mo, MOProfile moProfile) {
         try {
             mo.setRole(2);
@@ -239,7 +256,58 @@ public class AdminService {
                     .skip((long) (pageNum - 1) * pageSize)
                     .limit(pageSize)
                     .map(u -> {
-                        String proId = null;
+                        String proId;
+                        if (role == 1) {
+                            proId = taProfiles.stream()
+                                    .filter(tp -> tp.getUserId().equals(u.getId()))
+                                    .map(TAProfile::getId)
+                                    .findFirst()
+                                    .orElse(null);
+                        } else {
+                            proId = moProfiles.stream()
+                                    .filter(mp -> mp.getUserId().equals(u.getId()))
+                                    .map(MOProfile::getId)
+                                    .findFirst()
+                                    .orElse(null);
+                        }
+                        return UserMapper.INSTANCE.toDetailDTO(u, proId);
+                    })
+                    .toList();
+        } catch (IOException e) {
+            log.error("get accounts by role failed, role: {}, error: {}", role, e.getMessage());
+            return List.of();
+        }
+    }
+
+    public List<UserDetailDTO> getAccountsByRole(int role, QueryCondition condition, String excludeUserId) {
+        try {
+            List<User> users = userRepo.loadAllEntities();
+            List<TAProfile> taProfiles = taProfileRepo.loadAllEntities();
+            List<MOProfile> moProfiles = moProfileRepo.loadAllEntities();
+
+            int pageNum = Math.max(condition.getPage(), 1);
+
+            Stream<User> userStream = users.stream()
+                    .filter(u -> u != null && u.getRole() == role && !u.getId().equals(excludeUserId));
+
+            userStream = switch (condition.getFilter()) {
+                case "available" -> userStream.filter(u -> u.getStatus() == 0);
+                case "unavailable" -> userStream.filter(u -> u.getStatus() == 1);
+                case "all" -> userStream;
+                default -> userStream;
+            };
+
+            userStream = switch (condition.getOrder()) {
+                case "name" -> userStream.sorted(Comparator.comparing(User::getName));
+                case "createAt" -> userStream.sorted(Comparator.comparing(User::getCreateAt).reversed());
+                case "updateAt" -> userStream.sorted(Comparator.comparing(User::getUpdateAt).reversed());
+                case "lastLoginAt" -> userStream.sorted(Comparator.comparing(User::getLastLoginAt).reversed());
+                default -> userStream.sorted(Comparator.comparing(User::getName));
+            };
+            return userStream.skip((long) (pageNum - 1) * pageSize)
+                    .limit(pageSize)
+                    .map(u -> {
+                        String proId;
                         if (role == 1) {
                             proId = taProfiles.stream()
                                     .filter(tp -> tp.getUserId().equals(u.getId()))
@@ -273,5 +341,32 @@ public class AdminService {
             log.error("get account pages failed, role: {}, error: {}", role, e.getMessage());
             return 0;
         }
+    }
+
+    public long getAccountPages(int role, QueryCondition condition, String excludeUserId) {
+        try {
+            List<User> users = userRepo.loadAllEntities();
+
+            Stream<User> userStream = users.stream()
+                    .filter(u -> u != null && u.getRole() == role && !u.getId().equals(excludeUserId));
+
+            userStream = switch (condition.getFilter()) {
+                case "available" -> userStream.filter(u -> u.getStatus() == 0);
+                case "unavailable" -> userStream.filter(u -> u.getStatus() == 1);
+                case "all" -> userStream;
+                default -> userStream;
+            };
+
+            long count = userStream.count();
+            return count == 0 ? 0 : (count % pageSize == 0 ? count / pageSize : count / pageSize + 1);
+        } catch (IOException e) {
+            log.error("get account pages failed, role: {}, error: {}", role, e.getMessage());
+            return 0;
+        }
+    }
+
+    public String encryptPassword(String password) {
+        password = DigestUtils.md5Hex(password);
+        return password;
     }
 }
