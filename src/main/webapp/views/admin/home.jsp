@@ -1,6 +1,6 @@
 <%--
   @author: wangyue
-  @Since: 2026/3/24
+  @Since: 2026/4/14
 --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
@@ -32,6 +32,11 @@
                     <a class="dropdown-item exit">Exit</a>
                 </div>
             </div>
+
+            <nav class="nav-menu">
+                <a href="adminServlet?action=listAccounts&filter=all&order=name" class="nav-item active">Home</a>
+                <a href="views/admin/post.jsp" class="nav-item">Post</a>
+            </nav>
         </div>
     </div>
 </header>
