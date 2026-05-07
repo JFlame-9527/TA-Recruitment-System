@@ -35,7 +35,7 @@
             </div>
 
             <nav class="nav-menu">
-                <a href="moServlet?action=listPosition&page=1" class="nav-item">Home</a>
+                <a href="moServlet?action=listPosition&page=1&filter=all&order=postDate" class="nav-item">Home</a>
                 <a href="moServlet?action=postPosition" class="nav-item">Post Position</a>
             </nav>
         </div>
@@ -60,6 +60,27 @@
 
             <!-- Tab 1: Approval List (Default) -->
             <div id="approvalTab" class="tab-content active">
+                <div class="approval-header">
+                    <h2 class="approval-title">Applications</h2>
+                    <div class="page-controls">
+                        <div class="control-item">
+                            <label for="appFilterSelect">Filter:</label>
+                            <select id="appFilterSelect" class="control-select">
+                                <option value="all" selected>All</option>
+                                <option value="opened">Opened</option>
+                                <option value="offered">Offered</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                        </div>
+                        <div class="control-item">
+                            <label for="appOrderSelect">Sort by:</label>
+                            <select id="appOrderSelect" class="control-select">
+                                <option value="applyAt" selected>Apply Time</option>
+                                <option value="recommend">Recommendation</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
                 <div id="approvalListContainer">
                     <p class="loading-text">Loading applications...</p>
                 </div>
@@ -100,6 +121,42 @@
                         <div class="grid-item">
                             <span class="grid-label">Rejected</span>
                             <span class="grid-value">${position.rejectedNum}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3 class="section-title">Grade Requirements</h3>
+                        <div class="detail-grid">
+                            <div class="grid-item">
+                                <span class="grid-label">Minimum Degree</span>
+                                <span class="grid-value">
+                                    <c:choose>
+                                        <c:when test="${position.minGrade == -1}">Unlimited</c:when>
+                                        <c:otherwise>
+                                            <c:choose>
+                                                <c:when test="${position.minGrade <= 4}">Bachelor (Year ${position.minGrade})</c:when>
+                                                <c:when test="${position.minGrade <= 7}">Master (Year ${position.minGrade - 5})</c:when>
+                                                <c:otherwise>PhD (Year ${position.minGrade - 8})</c:otherwise>
+                                            </c:choose>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </span>
+                            </div>
+                            <div class="grid-item">
+                                <span class="grid-label">Maximum Degree</span>
+                                <span class="grid-value">
+                                    <c:choose>
+                                        <c:when test="${position.maxGrade == 2147483647}">Unlimited</c:when>
+                                        <c:otherwise>
+                                            <c:choose>
+                                                <c:when test="${position.maxGrade <= 4}">Bachelor (Year ${position.maxGrade})</c:when>
+                                                <c:when test="${position.maxGrade <= 7}">Master (Year ${position.maxGrade - 5})</c:when>
+                                                <c:otherwise>PhD (Year ${position.maxGrade - 8})</c:otherwise>
+                                            </c:choose>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </span>
+                            </div>
                         </div>
                     </div>
 
@@ -191,14 +248,29 @@
 
 <script>
     const currentPosId = '${posId}';
-    const fromPage = '${fromPage}';
+    const fromCondition = {
+        page: ${fromCondition.page != null ? fromCondition.page : 1},
+        filter: '${fromCondition.filter != null ? fromCondition.filter : "all"}',
+        order: '${fromCondition.order != null ? fromCondition.order : "postDate"}'
+    };
     let currentAppPage = 1;
     let currentProfileData = null;
-    let pendingAction = null; // 'offer' or 'reject'
+    let pendingAction = null;
     let pendingAppId = null;
+    let currentFilter = 'all';
+    let currentOrder = 'applyAt';
 
     // Load approval list on page load
     $(document).ready(function() {
+        // Bind dropdown change events for position page
+        $('#appFilterSelect').change(function() {
+            setPositionFilter($(this).val());
+        });
+
+        $('#appOrderSelect').change(function() {
+            setPositionOrder($(this).val());
+        });
+
         loadApprovalList(1);
     });
 </script>

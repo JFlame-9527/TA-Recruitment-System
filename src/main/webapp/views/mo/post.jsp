@@ -33,7 +33,7 @@
             </div>
 
             <nav class="nav-menu">
-                <a href="moServlet?action=listPosition&page=1" class="nav-item">Home</a>
+                <a href="moServlet?action=listPosition&page=1&filter=all&order=postDate" class="nav-item">Home</a>
                 <a href="moServlet?action=postPosition" class="nav-item active">Post Position</a>
             </nav>
         </div>
@@ -109,9 +109,10 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="duration">Duration (weeks) <span class="required">*</span></label>
-                            <input type="number" id="duration" name="duration" class="form-control"
-                                   min="1" max="52" placeholder="e.g., 12" required>
+                            <label for="duration">Duration (weeks)</label>
+                            <input type="text" id="duration" name="duration" class="form-control"
+                                   readonly placeholder="Auto-calculated from dates">
+                            <small class="form-hint">Calculated automatically based on start and end dates</small>
                         </div>
                     </div>
 
@@ -120,6 +121,46 @@
                             <label for="requiredNum">Number of Positions <span class="required">*</span></label>
                             <input type="number" id="requiredNum" name="requiredNum" class="form-control"
                                    min="1" max="50" placeholder="e.g., 3" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="section-title">Grade Requirements</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Minimum Grade Requirement</label>
+                            <select id="minDegree" name="minDegree" class="form-control">
+                                <option value="unlimited">Unlimited</option>
+                                <option value="BACHELOR">Bachelor</option>
+                                <option value="MASTER">Master</option>
+                                <option value="PHD">PhD</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="minYear">Minimum Year</label>
+                            <input type="number" id="minYear" name="minYear" class="form-control"
+                                   min="1" max="10" placeholder="e.g., 3" disabled>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Maximum Grade Requirement</label>
+                            <select id="maxDegree" name="maxDegree" class="form-control">
+                                <option value="unlimited">Unlimited</option>
+                                <option value="BACHELOR">Bachelor</option>
+                                <option value="MASTER">Master</option>
+                                <option value="PHD">PhD</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maxYear">Maximum Year</label>
+                            <input type="number" id="maxYear" name="maxYear" class="form-control"
+                                   min="1" max="10" placeholder="e.g., 5" disabled>
                         </div>
                     </div>
                 </div>

@@ -30,8 +30,8 @@ import java.util.stream.Stream;
 
 /**
  * @author QiheSun Xiri04
- * @version 3.0.0
- * @since 2026/5/5
+ * @version 2.0.0
+ * @since 2026/3/24
  */
 @Slf4j
 public class TAService {
@@ -205,52 +205,6 @@ public class TAService {
         return true;
     }
 
-    public List<AppPosDTO> getAppPosList(String userId, int page) {
-        if (userId == null || userId.trim().isEmpty()) {
-            log.warn("userId is null or empty");
-            return List.of();
-        }
-
-        try {
-            List<Application> applications = applicationRepo.loadAllEntities();
-            List<Position> positions = positionRepo.loadAllEntities();
-
-            if (applications == null || applications.isEmpty()) {
-                return List.of();
-            }
-
-            Map<String, Position> positionMap = positions.stream()
-                    .filter(pos -> pos != null && pos.getId() != null)
-                    .collect(java.util.stream.Collectors.toMap(
-                            Position::getId,
-                            pos -> pos,
-                            (existing, replacement) -> existing
-                    ));
-
-            int pageNum = Math.max(page, 1);
-
-            List<AppPosDTO> appPosList = applications.stream()
-                    .filter(app -> app != null && userId.equals(app.getUserId()))
-                    .map(application -> {
-                        Position position = positionMap.get(application.getPositionId());
-                        if (position == null) {
-                            log.debug("Position not found for positionId: {}", application.getPositionId());
-                            return null;
-                        }
-                        return MultiMapper.INSTANCE.toAppPosDTO(application, position);
-                    })
-                    .filter(dto -> dto != null)
-                    .skip((long) (pageNum - 1) * applyPageSize)
-                    .limit(applyPageSize)
-                    .toList();
-
-            return appPosList;
-        } catch (IOException e) {
-            log.error("get appPosList failed, userId: {}, error message: {}", userId, e.getMessage());
-            return List.of();
-        }
-    }
-
     public List<AppPosDTO> getAppPosList(String userId, QueryCondition condition) {
         if (userId == null || userId.trim().isEmpty()) {
             log.warn("userId is null or empty");
@@ -317,28 +271,6 @@ public class TAService {
         }
     }
 
-    public long getAppPosPages(String userId) {
-        if (userId == null || userId.trim().isEmpty()) {
-            log.warn("userId is null or empty");
-            return 0;
-        }
-
-        try {
-            List<Application> applications = applicationRepo.loadAllEntities();
-
-            if (applications == null || applications.isEmpty()) {
-                return 0;
-            }
-
-            long appPosCount = applications.stream()
-                    .filter(app -> app != null && userId.equals(app.getUserId())).count();
-            return appPosCount % applyPageSize == 0 ? appPosCount / applyPageSize : appPosCount / applyPageSize + 1;
-        } catch (IOException e) {
-            log.error("get appPosCount failed, userId: {}, error message: {}", userId, e.getMessage());
-            return 0;
-        }
-    }
-
     public long getAppPosPages(String userId, QueryCondition condition) {
         if (userId == null || userId.trim().isEmpty()) {
             log.warn("userId is null or empty");
@@ -400,42 +332,6 @@ public class TAService {
         }
     }
 
-    public List<PosBriefDTO> getPositionList(String userId, int page) {
-
-        try {
-            List<Position> positions = positionRepo.loadAllEntities();
-            List<Application> applications = applicationRepo.loadAllEntities();
-
-            Map<String, Application> posAppMap = applications.stream()
-                    .filter(app -> app != null && userId.equals(app.getUserId()))
-                    .collect(java.util.stream.Collectors.toMap(
-                            Application::getPositionId,
-                            app -> app,
-                            (existing, replacement) -> existing
-                    ));
-
-            int pageNum = Math.max(page, 1);
-
-            return positions.stream()
-                    .filter(pos -> pos != null && pos.getStatus() != 3)
-                    .skip((long) (pageNum - 1) * posPageSize)
-                    .limit(posPageSize)
-                    .map(pos -> {
-                        Application app = posAppMap.get(pos.getId());
-                        if (app == null) {
-                            app = new Application(-1);
-                        }
-                        return PosMapper.INSTANCE.toTAPosBriefDTO(pos, app);
-                    })
-                    .filter(Objects::nonNull)
-                    .toList();
-
-        } catch (IOException e) {
-            log.error("get positions failed, error message: {}", e.getMessage());
-            return List.of();
-        }
-    }
-
     public List<PosBriefDTO> getPositionList(String userId, QueryCondition condition) {
         try {
             List<Position> positions = positionRepo.loadAllEntities();
@@ -456,7 +352,7 @@ public class TAService {
 
             posStream = switch (condition.getFilter()) {
                 case "opened" -> posStream.filter(pos -> pos.getStatus() == 0);
-                case "closed|filled" -> posStream.filter(pos -> pos.getStatus() == 1 || pos.getStatus() == 2);
+                case "closedFilled" -> posStream.filter(pos -> pos.getStatus() == 1 || pos.getStatus() == 2);
                 case "all" -> posStream;
                 default -> posStream;
             };
@@ -475,7 +371,7 @@ public class TAService {
 
             posStream = switch (condition.getOrder()) {
                 case "postDate" -> posStream.sorted(Comparator.comparing(Position::getPostDate).reversed());
-                case "deadline" -> posStream.sorted(Comparator.comparing(Position::getDeadline).reversed());
+                case "deadline" -> posStream.sorted(Comparator.comparing(Position::getDeadline));
                 case "vacancy" ->
                         posStream.sorted(Comparator.comparing((Position pos) -> pos.getRequiredNum() - pos.getOfferedNum()).reversed());
                 case "workload" ->
@@ -567,7 +463,7 @@ public class TAService {
 
             posStream = switch (condition.getFilter()) {
                 case "opened" -> posStream.filter(pos -> pos.getStatus() == 0);
-                case "closed|filled" -> posStream.filter(pos -> pos.getStatus() == 1 || pos.getStatus() == 2);
+                case "closedFilled" -> posStream.filter(pos -> pos.getStatus() == 1 || pos.getStatus() == 2);
                 case "all" -> posStream;
                 default -> posStream;
             };

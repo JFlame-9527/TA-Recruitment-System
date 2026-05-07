@@ -33,7 +33,9 @@ $(document).ready(function() {
         e.preventDefault();
         const page = $(this).data('page');
         if (page) {
-            window.location.href = 'moServlet?action=listPosition&page=' + page;
+            const filter = typeof currentFilter !== 'undefined' ? currentFilter : 'all';
+            const order = typeof currentOrder !== 'undefined' ? currentOrder : 'postDate';
+            window.location.href = 'moServlet?action=listPosition&page=' + page + '&filter=' + filter + '&order=' + order;
         }
     });
 
@@ -43,7 +45,21 @@ $(document).ready(function() {
 
 // View position details
 function viewPosition(posId, page) {
-    window.location.href = 'moServlet?action=positionDetail&posId=' + posId + '&page=' + page;
+    const filter = typeof currentFilter !== 'undefined' ? currentFilter : 'all';
+    const order = typeof currentOrder !== 'undefined' ? currentOrder : 'postDate';
+    window.location.href = 'moServlet?action=positionDetail&posId=' + posId + '&page=' + page + '&filter=' + filter + '&order=' + order;
+}
+
+// Set filter for home page
+function setHomeFilter(filter) {
+    currentFilter = filter;
+    window.location.href = 'moServlet?action=listPosition&page=1&filter=' + filter + '&order=' + currentOrder;
+}
+
+// Set order for home page
+function setHomeOrder(order) {
+    currentOrder = order;
+    window.location.href = 'moServlet?action=listPosition&page=1&filter=' + currentFilter + '&order=' + order;
 }
 
 // Initialize post position form
@@ -110,6 +126,72 @@ function initPostPositionForm() {
     // Make removeSkill globally accessible
     window.removeSkill = removeSkill;
 
+    // Grade requirement management
+    const $minDegree = $('#minDegree');
+    const $minYear = $('#minYear');
+    const $maxDegree = $('#maxDegree');
+    const $maxYear = $('#maxYear');
+
+    function handleDegreeChange($degreeSelect, $yearInput) {
+        if ($degreeSelect.val() === 'unlimited') {
+            $yearInput.prop('disabled', true).val('');
+        } else {
+            $yearInput.prop('disabled', false);
+        }
+    }
+
+    $minDegree.change(function() {
+        handleDegreeChange($(this), $minYear);
+    });
+
+    $maxDegree.change(function() {
+        handleDegreeChange($(this), $maxYear);
+    });
+
+    // Duration calculation
+    function calculateDuration() {
+        const startDateStr = $('#startDate').val();
+        const endDateStr = $('#endDate').val();
+
+        if (!startDateStr || !endDateStr) {
+            $('#duration').val('');
+            return;
+        }
+
+        const startDate = new Date(startDateStr);
+        const endDate = new Date(endDateStr);
+
+        if (startDate >= endDate) {
+            $('#duration').val('');
+            return;
+        }
+
+        // Calculate weeks with Sunday as boundary
+        // Find the Sunday before or on start date
+        const startDay = startDate.getDay(); // 0 is Sunday
+        const daysToPreviousSunday = startDay;
+        const adjustedStartDate = new Date(startDate);
+        adjustedStartDate.setDate(startDate.getDate() - daysToPreviousSunday);
+
+        // Find the Sunday after or on end date
+        const endDay = endDate.getDay();
+        const daysToNextSunday = endDay === 0 ? 0 : 7 - endDay;
+        const adjustedEndDate = new Date(endDate);
+        adjustedEndDate.setDate(endDate.getDate() + daysToNextSunday);
+
+        // Calculate weeks
+        const diffTime = adjustedEndDate.getTime() - adjustedStartDate.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const weeks = Math.ceil(diffDays / 7);
+
+        $('#duration').val(weeks);
+    }
+
+    $('#startDate, #endDate').change(function() {
+        calculateDuration();
+        validateDates();
+    });
+
     // Form submission
     $('#postPositionForm').submit(function(e) {
         e.preventDefault();
@@ -131,6 +213,30 @@ function initPostPositionForm() {
             return;
         }
 
+        // Calculate minGrade and maxGrade
+        const minDegree = $minDegree.val();
+        const maxDegree = $maxDegree.val();
+        const minYear = parseInt($minYear.val()) || 0;
+        const maxYear = parseInt($maxYear.val()) || 0;
+
+        let calculatedMinGrade = -1;
+        let calculatedMaxGrade = 2147483647; // Integer.MAX_VALUE
+
+        if (minDegree !== 'unlimited') {
+            const offset = getGradeOffset(minDegree);
+            calculatedMinGrade = minYear + offset;
+        }
+
+        if (maxDegree !== 'unlimited') {
+            const offset = getGradeOffset(maxDegree);
+            calculatedMaxGrade = maxYear + offset;
+        }
+
+        if (calculatedMinGrade > calculatedMaxGrade) {
+            $errorDiv.text('Minimum grade cannot be greater than maximum grade').show();
+            return;
+        }
+
         const formData = new FormData($form[0]);
         
         formData.delete('skills');
@@ -145,6 +251,10 @@ function initPostPositionForm() {
         formData.set('startDate', startDate + ' 00:00:00');
         formData.set('endDate', endDate + ' 00:00:00');
         formData.set('deadline', deadline + ' 00:00:00');
+
+        // Add calculated values
+        formData.set('minGrade', calculatedMinGrade.toString());
+        formData.set('maxGrade', calculatedMaxGrade.toString());
 
         $submitBtn.prop('disabled', true).text('Posting...');
 
@@ -162,7 +272,7 @@ function initPostPositionForm() {
                     $('#messageModal').fadeIn(200);
                     
                     var redirectHome = function() {
-                        window.location.href = 'moServlet?action=listPosition&page=1';
+                        window.location.href = 'moServlet?action=listPosition&page=1&filter=all&order=postDate';
                     };
                     
                     $('#confirmMessageModal').off('click').on('click', function() {
@@ -192,10 +302,20 @@ function initPostPositionForm() {
         });
     });
 
+    // Helper function to get grade offset
+    function getGradeOffset(degree) {
+        switch (degree.toUpperCase()) {
+            case 'BACHELOR': return 0;
+            case 'MASTER': return 10;
+            case 'PHD': return 20;
+            default: return 0;
+        }
+    }
+
     // Cancel button
     $('#cancelBtn').click(function() {
         if (confirm('Are you sure you want to cancel? All entered data will be lost.')) {
-            window.location.href = 'moServlet?action=listPosition&page=1';
+            window.location.href = 'moServlet?action=listPosition&page=1&filter=all&order=postDate';
         }
     });
 
@@ -256,7 +376,10 @@ $(window).click(function(e) {
 
 // Go back to position list
 function goBack() {
-    window.location.href = 'moServlet?action=listPosition&page=' + fromPage;
+    const page = fromCondition.page || 1;
+    const filter = fromCondition.filter || 'all';
+    const order = fromCondition.order || 'postDate';
+    window.location.href = 'moServlet?action=listPosition&page=' + page + '&filter=' + filter + '&order=' + order;
 }
 
 // Tab switching
@@ -286,11 +409,27 @@ function loadApprovalList(page) {
         data: {
             action: 'listApp',
             posId: currentPosId,
-            page: page
+            page: page,
+            filter: currentFilter,
+            order: currentOrder
         },
         dataType: 'json',
         success: function(response) {
             if (response.success) {
+                // Extract condition from response and update dropdowns
+                if (response.data.condition) {
+                    currentFilter = response.data.condition.filter || 'all';
+                    currentOrder = response.data.condition.order || 'applyAt';
+                    currentAppPage = response.data.condition.page || 1;
+
+                    // Update dropdown selections
+                    if ($('#appFilterSelect').length > 0) {
+                        $('#appFilterSelect').val(currentFilter);
+                    }
+                    if ($('#appOrderSelect').length > 0) {
+                        $('#appOrderSelect').val(currentOrder);
+                    }
+                }
                 renderApprovalList(response.data);
             } else {
                 $('#approvalListContainer').html(
@@ -306,6 +445,18 @@ function loadApprovalList(page) {
     });
 }
 
+// Set filter for position page (approval list)
+function setPositionFilter(filter) {
+    currentFilter = filter;
+    loadApprovalList(1);
+}
+
+// Set order for position page (approval list)
+function setPositionOrder(order) {
+    currentOrder = order;
+    loadApprovalList(1);
+}
+
 // Render application list
 function renderApprovalList(data) {
     const appList = data.appList;
@@ -316,7 +467,7 @@ function renderApprovalList(data) {
         $('#approvalListContainer').html(
             '<div class="empty-state-detail">' +
             '<div class="empty-icon">📋</div>' +
-            '<p>No applications yet</p>' +
+            '<p>No applications found</p>' +
             '</div>'
         );
         return;

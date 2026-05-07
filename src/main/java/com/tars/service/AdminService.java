@@ -22,8 +22,8 @@ import java.util.stream.Stream;
 
 /**
  * @author wangyue
- * @version 2.0.0
- * @since 2026/4/14
+ * @version 1.0.0
+ * @since 2026/3/24
  */
 @Slf4j
 public class AdminService {
@@ -368,5 +368,34 @@ public class AdminService {
     public String encryptPassword(String password) {
         password = DigestUtils.md5Hex(password);
         return password;
+    }
+
+    public boolean closePositions() {
+        try {
+            List<Position> positions = posRepo.loadAllEntities();
+            LocalDateTime now = LocalDateTime.now();
+            int closedCount = 0;
+
+            for (Position position : positions) {
+                if (position.getStatus() == 0 && position.getDeadline() != null) {
+                    LocalDateTime deadline = position.getDeadline().toLocalDateTime();
+                    if (deadline.isBefore(now)) {
+                        position.setStatus(2);
+                        position.setUpdateAt(Timestamp.valueOf(now));
+                        closedCount++;
+                    }
+                }
+            }
+
+            if (closedCount > 0) {
+                posRepo.saveAllEntities(positions);
+                log.info("Closed {} expired positions", closedCount);
+            }
+
+            return true;
+        } catch (IOException e) {
+            log.error("Failed to close expired positions, error: {}", e.getMessage());
+            return false;
+        }
     }
 }

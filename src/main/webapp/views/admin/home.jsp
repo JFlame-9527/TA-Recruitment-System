@@ -1,6 +1,6 @@
 <%--
   @author: wangyue
-  @Since: 2026/4/14
+  @Since: 2026/3/24
 --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
@@ -23,12 +23,14 @@
 
         <div class="nav-right">
             <div class="user-info-wrapper">
-                <div class="user-info">
+                <div class="user-info" data-userid="${sessionScope.user.id}" data-username="${sessionScope.user.name}">
                     <img src="static/img/user.png" alt="User Avatar">
                     <span class="username">${sessionScope.user.name}</span>
                 </div>
 
                 <div class="user-dropdown">
+                    <a class="dropdown-item edit">Edit</a>
+                    <div class="dropdown-divider"></div>
                     <a class="dropdown-item exit">Exit</a>
                 </div>
             </div>
@@ -267,6 +269,34 @@
     </div>
 </div>
 
+<div id="editCurrentUserModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3>Edit My Account</h3>
+        <form id="editCurrentUserForm">
+            <input type="hidden" name="userId" id="editCurrentUserUserId">
+
+            <div class="form-group">
+                <label for="editCurrentUserUsername">Username</label>
+                <input type="text" id="editCurrentUserUsername" name="username" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="editCurrentUserPassword">New Password (min 6 characters)</label>
+                <input type="password" id="editCurrentUserPassword" name="newPassword" class="form-control" minlength="6">
+                <small class="form-hint">Leave empty to keep current password</small>
+            </div>
+
+            <div id="editCurrentUserError" class="alert alert-danger" style="display: none;"></div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editCurrentUserModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div id="messageModal" class="modal" style="display: none;">
     <div class="modal-content">
         <span class="close-modal">&times;</span>
@@ -275,6 +305,15 @@
         <button class="btn-confirm" id="confirmMessageModal">OK</button>
     </div>
 </div>
+
+<script>
+    $(document).ready(function() {
+        $('#editCurrentUserForm').submit(function(e) {
+            e.preventDefault();
+            submitEditCurrentUserForm();
+        });
+    });
+</script>
 
 <script src="static/js/admin.js"></script>
 </body>

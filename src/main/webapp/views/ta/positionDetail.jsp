@@ -35,8 +35,8 @@
             </div>
 
             <nav class="nav-menu">
-                <a href="taServlet?action=listApplied&page=1" class="nav-item">Home</a>
-                <a href="taServlet?action=listPositions&page=1" class="nav-item active">Position</a>
+                <a href="taServlet?action=listApplied&page=1&filter=all&order=applyAt" class="nav-item">Home</a>
+                <a href="taServlet?action=listPositions&page=1&filter=all&order=postDate" class="nav-item active">Position</a>
                 <a href="taServlet?action=getProfile" class="nav-item">Profile</a>
             </nav>
         </div>

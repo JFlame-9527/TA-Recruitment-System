@@ -1,6 +1,7 @@
 package com.tars.controller;
 
 import com.tars.entity.bean.Position;
+import com.tars.entity.dto.QueryCondition;
 import com.tars.entity.dto.mo.ApplicationDTO;
 import com.tars.entity.dto.mo.PosBriefDTO;
 import com.tars.entity.dto.mo.PosDetailDTO;
@@ -17,6 +18,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +36,7 @@ import java.util.Map;
         maxFileSize = 1024 * 1024 * 10,
         maxRequestSize = 1024 * 1024 * 50
 )
-public class MOServlet extends BaseServlet{
+public class MOServlet extends BaseServlet {
 
     private MOService moService;
 
@@ -45,33 +48,19 @@ public class MOServlet extends BaseServlet{
 
 
     private void listPosition(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String pageParam = req.getParameter("page");
-        if (pageParam == null || pageParam.trim().isEmpty()) {
-            pageParam = "1";
-        }
-
-        int page;
-        try {
-            page = Integer.parseInt(pageParam);
-            if (page < 1) {
-                page = 1;
-            }
-        } catch (NumberFormatException e) {
-            log.warn("Invalid page number: {}", pageParam);
-            page = 1;
-        }
+        QueryCondition condition = BeanUtils.mapFromReq(req, QueryCondition.class);
 
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
-        String userId = ((UserDTO)userObj).getId();
-        log.info("MO user {} requesting positions list, page: {}", userId, page);
+        String userId = ((UserDTO) userObj).getId();
+        log.info("MO user {} requesting positions list, page: {}", userId, condition.getPage());
 
-        List<PosBriefDTO> positionList = moService.getPositionList(userId, page);
-        long totalPages = moService.getPositionPages(userId);
+        List<PosBriefDTO> positionList = moService.getPositionList(userId, condition);
+        long totalPages = moService.getPositionPages(userId, condition);
 
         req.setAttribute("positionList", positionList);
-        req.setAttribute("currentPage", page);
+        req.setAttribute("condition", condition);
         req.setAttribute("totalPages", totalPages);
         req.getRequestDispatcher("/views/mo/home.jsp").forward(req, resp);
     }
@@ -80,9 +69,9 @@ public class MOServlet extends BaseServlet{
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
         String posId = req.getParameter("posId");
-        String fromPage = req.getParameter("page");
+        QueryCondition condition = BeanUtils.mapFromReq(req, QueryCondition.class);
 
         if (posId == null || posId.trim().isEmpty()) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Position ID is required");
@@ -102,7 +91,7 @@ public class MOServlet extends BaseServlet{
 
         req.setAttribute("position", position);
         req.setAttribute("posId", posId);
-        req.setAttribute("fromPage", fromPage != null ? fromPage : "1");
+        req.setAttribute("fromCondition", condition);
         req.getRequestDispatcher("/views/mo/position.jsp").forward(req, resp);
     }
 
@@ -117,17 +106,14 @@ public class MOServlet extends BaseServlet{
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
         log.info("MO user {} creating position", userId);
 
         try {
             Position position = BeanUtils.mapFromReq(req, Position.class);
-            
+
             position.setPostUserId(userId);
-            position.setStatus(0);
-            position.setAppliedNum(0);
-            position.setOfferedNum(0);
-            position.setRejectedNum(0);
+            position.setPostDate(Timestamp.valueOf(LocalDateTime.now()));
 
             boolean success = moService.createPosition(position);
 
@@ -149,7 +135,7 @@ public class MOServlet extends BaseServlet{
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
         String posId = req.getParameter("posId");
 
         if (posId == null || posId.trim().isEmpty()) {
@@ -166,7 +152,7 @@ public class MOServlet extends BaseServlet{
 
         try {
             Position updatedFields = BeanUtils.mapFromReq(req, Position.class);
-            
+
             updatedFields.setId(posId);
             updatedFields.setPostUserId(userId);
 
@@ -194,37 +180,24 @@ public class MOServlet extends BaseServlet{
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
 
         if (!moService.verifyPositionOwner(posId, userId)) {
             RespUtils.writeError(resp, "You don't have permission to view applications for this position", HttpServletResponse.SC_FORBIDDEN);
             return;
         }
 
-        String pageParam = req.getParameter("page");
-        if (pageParam == null || pageParam.trim().isEmpty()) {
-            pageParam = "1";
-        }
+        QueryCondition condition = BeanUtils.mapFromReq(req, QueryCondition.class);
 
-        int page;
-        try {
-            page = Integer.parseInt(pageParam);
-            if (page < 1) {
-                page = 1;
-            }
-        } catch (NumberFormatException e) {
-            log.warn("Invalid page number: {}", pageParam);
-            page = 1;
-        }
+        log.info("MO user {} requesting applications for position {}, page: {}, filter: {}, order: {}", 
+                userId, posId, condition.getPage(), condition.getFilter(), condition.getOrder());
 
-        log.info("MO user {} requesting applications for position {}, page: {}", userId, posId, page);
-
-        List<ApplicationDTO> appList = moService.getAppList(posId, page);
-        long totalPages = moService.getAppPages(posId);
+        List<ApplicationDTO> appList = moService.getAppList(posId, condition);
+        long totalPages = moService.getAppPages(posId,  condition);
 
         Map<String, Object> data = new HashMap<>();
         data.put("appList", appList);
-        data.put("currentPage", page);
+        data.put("condition", condition);
         data.put("totalPages", totalPages);
 
         RespUtils.writeSuccess(resp, data);
@@ -234,7 +207,7 @@ public class MOServlet extends BaseServlet{
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
         String proId = req.getParameter("proId");
         String appId = req.getParameter("appId");
 
@@ -264,7 +237,7 @@ public class MOServlet extends BaseServlet{
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
         String appId = req.getParameter("appId");
         String posId = req.getParameter("posId");
         String feedback = req.getParameter("feedback");
@@ -303,7 +276,7 @@ public class MOServlet extends BaseServlet{
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
         String appId = req.getParameter("appId");
         String posId = req.getParameter("posId");
         String feedback = req.getParameter("feedback");

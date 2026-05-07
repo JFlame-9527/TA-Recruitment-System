@@ -20,6 +20,10 @@ $(document).ready(function() {
         }
     });
 
+    $('.dropdown-item.edit').click(function() {
+        openEditCurrentUserModal();
+    });
+
     $(document).on('click', '.close-modal', function() {
         $(this).closest('.modal').fadeOut(200);
     });
@@ -419,7 +423,7 @@ function submitEditTaForm() {
                 action: 'updateUser',
                 id: userId,
                 name: username,
-                newPassword: newPassword
+                password: newPassword
             },
             dataType: 'json'
         })
@@ -696,4 +700,68 @@ function showCreateMoSuccess(message) {
     $('#formSuccess').text(message).show();
     $('#formError').hide();
     $('html, body').animate({ scrollTop: 0 }, 'fast');
+}
+
+function openEditCurrentUserModal() {
+    const $userInfo = $('.user-info');
+    const userId = $userInfo.data('userid');
+    const username = $userInfo.data('username');
+
+    console.log('Current user ID:', userId);
+    console.log('Current username:', username);
+
+    if (!userId || !username) {
+        showMessage('Error', 'Failed to load user information');
+        return;
+    }
+
+    $('#editCurrentUserUserId').val(userId);
+    $('#editCurrentUserUsername').val(username);
+    $('#editCurrentUserPassword').val('');
+    $('#editCurrentUserError').hide();
+
+    $('#editCurrentUserModal').css('display', 'flex');
+}
+
+function submitEditCurrentUserForm() {
+    const userId = $('#editCurrentUserUserId').val();
+    const username = $('#editCurrentUserUsername').val().trim();
+    const newPassword = $('#editCurrentUserPassword').val();
+
+    if (!username) {
+        $('#editCurrentUserError').text('Username is required').show();
+        return;
+    }
+
+    if (newPassword && newPassword.length < 6) {
+        $('#editCurrentUserError').text('Password must be at least 6 characters').show();
+        return;
+    }
+
+    $.ajax({
+        url: 'userServlet',
+        type: 'POST',
+        data: {
+            action: 'modifyUser',
+            userId: userId,
+            username: username,
+            password: newPassword
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                closeModal('editCurrentUserModal');
+                showMessage('Success', 'Account updated successfully. Please refresh the page.');
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
+            } else {
+                $('#editCurrentUserError').text(response.message || 'Failed to update account').show();
+            }
+        },
+        error: function(xhr) {
+            const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Network error';
+            $('#editCurrentUserError').text(errorMsg).show();
+        }
+    });
 }

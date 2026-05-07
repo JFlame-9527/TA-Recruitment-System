@@ -34,8 +34,8 @@
             </div>
 
             <nav class="nav-menu">
-                <a href="taServlet?action=listApplied&page=1" class="nav-item active">Home</a>
-                <a href="taServlet?action=listPositions&page=1" class="nav-item">Position</a>
+                <a href="taServlet?action=listApplied&page=1&filter=all&order=applyAt" class="nav-item active">Home</a>
+                <a href="taServlet?action=listPositions&page=1&filter=all&order=postDate" class="nav-item">Position</a>
                 <a href="taServlet?action=getProfile" class="nav-item">Profile</a>
             </nav>
         </div>
@@ -45,7 +45,29 @@
 <main class="main-content">
     <div class="content-wrapper">
         <div class="main-container">
-            <h1 class="page-title">My Applications</h1>
+            <div class="page-header">
+                <h1 class="page-title">My Applications</h1>
+
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="filterSelect">Filter:</label>
+                        <select id="filterSelect" class="filter-select">
+                            <option value="all" ${condition.filter == 'all' || empty condition.filter ? 'selected' : ''}>All</option>
+                            <option value="pending" ${condition.filter == 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="offered" ${condition.filter == 'offered' ? 'selected' : ''}>Offered</option>
+                            <option value="rejected" ${condition.filter == 'rejected' ? 'selected' : ''}>Rejected</option>
+                            <option value="withdrawn" ${condition.filter == 'withdrawn' ? 'selected' : ''}>Withdrawn</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="orderSelect">Sort by:</label>
+                        <select id="orderSelect" class="filter-select">
+                            <option value="applyAt" ${condition.order == 'applyAt' || empty condition.order ? 'selected' : ''}>Application Date</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
 
             <c:choose>
                 <c:when test="${empty appliedList}">
@@ -87,7 +109,7 @@
 
                                 <div class="card-actions">
                                     <button class="btn btn-view"
-                                            onclick="viewApplication('${item.appId}', '${item.posId}', ${currentPage})">
+                                            onclick="viewApplication('${item.appId}', '${item.posId}', ${condition.page})">
                                         View
                                     </button>
                                     <button class="btn btn-withdraw"
@@ -104,17 +126,17 @@
                     </div>
 
                     <div class="pagination">
-                        <c:if test="${currentPage > 1}">
-                            <a class="page-item" data-page="${currentPage - 1}">«</a>
+                        <c:if test="${condition.page > 1}">
+                            <a class="page-item" data-page="${condition.page - 1}">«</a>
                         </c:if>
 
                         <c:forEach begin="1" end="${totalPages}" var="i">
-                            <a class="page-item ${currentPage == i ? 'active' : ''}"
+                            <a class="page-item ${condition.page == i ? 'active' : ''}"
                                data-page="${i}">${i}</a>
                         </c:forEach>
 
-                        <c:if test="${currentPage < totalPages}">
-                            <a class="page-item" data-page="${currentPage + 1}">»</a>
+                        <c:if test="${condition.page < totalPages}">
+                            <a class="page-item" data-page="${condition.page + 1}">»</a>
                         </c:if>
                     </div>
                 </c:otherwise>

@@ -112,7 +112,7 @@ public class TestDataGenerator {
 
             latch.await();
             executor.shutdown();
-
+            
             if (!executor.awaitTermination(60, java.util.concurrent.TimeUnit.SECONDS)) {
                 executor.shutdownNow();
                 log.warn("Executor shutdown timeout, forced shutdown");
@@ -148,9 +148,9 @@ public class TestDataGenerator {
         List<User> users = userRepo.loadAllEntities();
 
         String[] taNames = {
-                "zhangsan", "lisi", "wangwu", "zhaoliu", "sunqi",
-                "zhouba", "wujiu", "zhengshi", "chenxiaoyu", "linfeng",
-                "huangwei", "xujing", "zhuqiang", "suna", "majun"
+            "zhangsan", "lisi", "wangwu", "zhaoliu", "sunqi",
+            "zhouba", "wujiu", "zhengshi", "chenxiaoyu", "linfeng",
+            "huangwei", "xujing", "zhuqiang", "suna", "majun"
         };
         for (int i = 0; i < taNames.length; i++) {
             User user = new User();
@@ -165,8 +165,8 @@ public class TestDataGenerator {
         }
 
         String[] moNames = {
-                "mo_chen", "mo_li", "mo_wang", "mo_zhang",
-                "mo_liu", "mo_yang", "mo_zhao", "mo_huang"
+            "mo_chen", "mo_li", "mo_wang", "mo_zhang",
+            "mo_liu", "mo_yang", "mo_zhao", "mo_huang"
         };
         for (int i = 0; i < moNames.length; i++) {
             User user = new User();
@@ -191,47 +191,47 @@ public class TestDataGenerator {
         List<User> taUsers = users.stream().filter(u -> u.getRole() == 1).toList();
 
         String[] colleges = {
-                "School of Computer Science",
-                "School of Engineering",
-                "School of Business",
-                "School of Mathematics",
-                "School of Physics",
-                "School of Chemistry",
-                "School of Biology",
-                "School of Economics",
-                "School of Law",
-                "School of Humanities"
+            "School of Computer Science",
+            "School of Engineering",
+            "School of Business",
+            "School of Mathematics",
+            "School of Physics",
+            "School of Chemistry",
+            "School of Biology",
+            "School of Economics",
+            "School of Law",
+            "School of Humanities"
         };
-
+        
         String[] majors = {
-                "Computer Science",
-                "Software Engineering",
-                "Information Systems",
-                "Data Science",
-                "Cybersecurity",
-                "Mechanical Engineering",
-                "Electrical Engineering",
-                "Civil Engineering",
-                "Business Administration",
-                "Finance",
-                "Applied Mathematics",
-                "Statistics",
-                "Molecular Biology",
-                "Chemical Engineering",
-                "International Law"
+            "Computer Science",
+            "Software Engineering",
+            "Information Systems",
+            "Data Science",
+            "Cybersecurity",
+            "Mechanical Engineering",
+            "Electrical Engineering",
+            "Civil Engineering",
+            "Business Administration",
+            "Finance",
+            "Applied Mathematics",
+            "Statistics",
+            "Molecular Biology",
+            "Chemical Engineering",
+            "International Law"
         };
-
+        
         String[][] skillSets = {
-                {"Java", "Python", "Spring Boot", "MySQL"},
-                {"JavaScript", "React", "Node.js", "MongoDB"},
-                {"C++", "Algorithms", "Data Structures", "Linux"},
-                {"Machine Learning", "TensorFlow", "Python", "Statistics"},
-                {"Web Development", "HTML/CSS", "Vue.js", "PostgreSQL"},
-                {"CAD", "SolidWorks", "MATLAB", "Mechanical Design"},
-                {"Circuit Design", "Verilog", "Embedded Systems", "IoT"},
-                {"Structural Analysis", "AutoCAD", "Project Management", "Construction"},
-                {"Financial Modeling", "Excel", "Risk Analysis", "Accounting"},
-                {"Legal Research", "Contract Law", "Critical Thinking", "Writing"}
+            {"Java", "Python", "Spring Boot", "MySQL"},
+            {"JavaScript", "React", "Node.js", "MongoDB"},
+            {"C++", "Algorithms", "Data Structures", "Linux"},
+            {"Machine Learning", "TensorFlow", "Python", "Statistics"},
+            {"Web Development", "HTML/CSS", "Vue.js", "PostgreSQL"},
+            {"CAD", "SolidWorks", "MATLAB", "Mechanical Design"},
+            {"Circuit Design", "Verilog", "Embedded Systems", "IoT"},
+            {"Structural Analysis", "AutoCAD", "Project Management", "Construction"},
+            {"Financial Modeling", "Excel", "Risk Analysis", "Accounting"},
+            {"Legal Research", "Contract Law", "Critical Thinking", "Writing"}
         };
 
         for (int i = 0; i < taUsers.size(); i++) {
@@ -250,10 +250,10 @@ public class TestDataGenerator {
             profile.setPhone("138" + String.format("%04d", 1000 + i) + String.format("%04d", 2000 + i));
             String resumeName = "resume_" + user.getName();
             profile.setResumeName(resumeName);
-
+            
             // Store relative path with subdirectory (consistent with user uploads)
             profile.setResumePath("resumes" + File.separator + resumeName + ".md");
-
+            
             profile.setCreateAt(user.getCreateAt());
             profile.setUpdateAt(Timestamp.valueOf(LocalDateTime.now()));
             profiles.add(profile);
@@ -293,79 +293,79 @@ public class TestDataGenerator {
         List<User> moUsers = users.stream().filter(u -> u.getRole() == 2 && u.getStatus() == 0).toList();
 
         String[] titles = {
-                "Teaching Assistant - Introduction to Programming",
-                "Teaching Assistant - Data Structures and Algorithms",
-                "Teaching Assistant - Web Development",
-                "Teaching Assistant - Database Systems",
-                "Teaching Assistant - Machine Learning",
-                "Teaching Assistant - Software Engineering",
-                "Teaching Assistant - Computer Networks",
-                "Teaching Assistant - Operating Systems",
-                "Lab Assistant - Computer Graphics",
-                "Grader - Discrete Mathematics",
-                "Teaching Assistant - Mechanical Design",
-                "Teaching Assistant - Circuit Analysis",
-                "Teaching Assistant - Financial Accounting",
-                "Teaching Assistant - Business Statistics",
-                "Teaching Assistant - Organic Chemistry",
-                "Lab Assistant - Molecular Biology",
-                "Teaching Assistant - Calculus I",
-                "Teaching Assistant - Linear Algebra",
-                "Teaching Assistant - Contract Law",
-                "Grader - English Literature"
+            "Teaching Assistant - Introduction to Programming",
+            "Teaching Assistant - Data Structures and Algorithms",
+            "Teaching Assistant - Web Development",
+            "Teaching Assistant - Database Systems",
+            "Teaching Assistant - Machine Learning",
+            "Teaching Assistant - Software Engineering",
+            "Teaching Assistant - Computer Networks",
+            "Teaching Assistant - Operating Systems",
+            "Lab Assistant - Computer Graphics",
+            "Grader - Discrete Mathematics",
+            "Teaching Assistant - Mechanical Design",
+            "Teaching Assistant - Circuit Analysis",
+            "Teaching Assistant - Financial Accounting",
+            "Teaching Assistant - Business Statistics",
+            "Teaching Assistant - Organic Chemistry",
+            "Lab Assistant - Molecular Biology",
+            "Teaching Assistant - Calculus I",
+            "Teaching Assistant - Linear Algebra",
+            "Teaching Assistant - Contract Law",
+            "Grader - English Literature"
         };
 
         String[] moduleCodes = {
-                "CS101", "CS201", "CS301", "CS302", "CS401",
-                "SE301", "CS303", "CS304", "CS402", "MA201",
-                "ME201", "EE202", "BA301", "BA202", "CH301",
-                "BI302", "MA101", "MA202", "LA401", "HU201"
+            "CS101", "CS201", "CS301", "CS302", "CS401",
+            "SE301", "CS303", "CS304", "CS402", "MA201",
+            "ME201", "EE202", "BA301", "BA202", "CH301",
+            "BI302", "MA101", "MA202", "LA401", "HU201"
         };
-
+        
         String[] moduleNames = {
-                "Introduction to Programming",
-                "Data Structures and Algorithms",
-                "Web Development",
-                "Database Systems",
-                "Machine Learning",
-                "Software Engineering",
-                "Computer Networks",
-                "Operating Systems",
-                "Computer Graphics",
-                "Discrete Mathematics",
-                "Mechanical Design Fundamentals",
-                "Circuit Analysis and Design",
-                "Financial Accounting Principles",
-                "Business Statistics",
-                "Organic Chemistry",
-                "Molecular Biology Lab",
-                "Calculus I",
-                "Linear Algebra",
-                "Contract Law",
-                "English Literature"
+            "Introduction to Programming",
+            "Data Structures and Algorithms",
+            "Web Development",
+            "Database Systems",
+            "Machine Learning",
+            "Software Engineering",
+            "Computer Networks",
+            "Operating Systems",
+            "Computer Graphics",
+            "Discrete Mathematics",
+            "Mechanical Design Fundamentals",
+            "Circuit Analysis and Design",
+            "Financial Accounting Principles",
+            "Business Statistics",
+            "Organic Chemistry",
+            "Molecular Biology Lab",
+            "Calculus I",
+            "Linear Algebra",
+            "Contract Law",
+            "English Literature"
         };
 
         String[][] skills = {
-                {"Java", "Python", "Programming Fundamentals"},
-                {"Data Structures", "Algorithms", "Problem Solving"},
-                {"HTML", "CSS", "JavaScript", "React"},
-                {"SQL", "Database Design", "Normalization"},
-                {"Python", "Machine Learning", "Statistics"},
-                {"Agile", "Git", "Software Design"},
-                {"Networking", "TCP/IP", "Security"},
-                {"Operating Systems", "C/C++", "System Programming"},
-                {"OpenGL", "Computer Graphics", "Mathematics"},
-                {"Mathematics", "Logic", "Proof Writing"},
-                {"CAD", "SolidWorks", "Mechanical Drawing"},
-                {"Circuit Design", "Multisim", "Electronics"},
-                {"Accounting", "Excel", "Financial Reporting"},
-                {"Statistics", "SPSS", "Data Analysis"},
-                {"Chemistry", "Lab Safety", "Spectroscopy"},
-                {"Biology", "PCR", "Microscopy"},
-                {"Calculus", "Mathematical Analysis", "Problem Solving"},
-                {"Linear Algebra", "Matrix Theory", "Abstract Algebra"},
-                {"Legal Research", "Case Analysis", "Writing"},
-                {"Literature", "Critical Reading", "Essay Writing"}
+            {"Java", "Python", "Programming Fundamentals"},
+            {"Data Structures", "Algorithms", "Problem Solving"},
+            {"HTML", "CSS", "JavaScript", "React"},
+            {"SQL", "Database Design", "Normalization"},
+            {"Python", "Machine Learning", "Statistics"},
+            {"Agile", "Git", "Software Design"},
+            {"Networking", "TCP/IP", "Security"},
+            {"Operating Systems", "C/C++", "System Programming"},
+            {"OpenGL", "Computer Graphics", "Mathematics"},
+            {"Mathematics", "Logic", "Proof Writing"},
+            {"CAD", "SolidWorks", "Mechanical Drawing"},
+            {"Circuit Design", "Multisim", "Electronics"},
+            {"Accounting", "Excel", "Financial Reporting"},
+            {"Statistics", "SPSS", "Data Analysis"},
+            {"Chemistry", "Lab Safety", "Spectroscopy"},
+            {"Biology", "PCR", "Microscopy"},
+            {"Calculus", "Mathematical Analysis", "Problem Solving"},
+            {"Linear Algebra", "Matrix Theory", "Abstract Algebra"},
+            {"Legal Research", "Case Analysis", "Writing"},
+            {"Literature", "Critical Reading", "Essay Writing"}
         };
 
         for (int i = 0; i < titles.length; i++) {
@@ -424,10 +424,10 @@ public class TestDataGenerator {
                 application.setUserId(taUsers.get(userIdx).getId());
                 application.setStatus(rd.nextInt(4));
                 application.setApplyAt(Timestamp.valueOf(LocalDateTime.now().minusDays(rd.nextInt(30))));
+                if (application.getStatus() != 3) {
+                    position.setAppliedNum(position.getAppliedNum() + 1);
+                }
                 switch (application.getStatus()) {
-                    case 0:
-                        position.setAppliedNum(position.getAppliedNum() + 1);
-                        break;
                     case 1:
                         position.setOfferedNum(position.getOfferedNum() + 1);
                         break;
@@ -447,7 +447,7 @@ public class TestDataGenerator {
         log.info("Starting AI generation for TA resumes and portraits...");
 
         PortraitGenerator portraitGenerator = new PortraitGenerator();
-
+        
         // Get absolute path for file writing
         String absoluteResumeDir = com.tars.config.ApplicationConfiguration.getInstance().getFilePath();
 
@@ -467,23 +467,23 @@ public class TestDataGenerator {
 
                         // Use absolute path to write file (includes subdirectory)
                         Path filePath = Paths.get(absoluteResumeDir, profile.getResumePath());
-
+                        
                         // Ensure parent directory exists
                         Path parentDir = filePath.getParent();
                         if (parentDir != null && !Files.exists(parentDir)) {
                             Files.createDirectories(parentDir);
                             log.debug("Created subdirectory: {}", parentDir);
                         }
-
+                        
                         Files.writeString(filePath, markdownResume, StandardCharsets.UTF_8);
-
+                        
                         File resumeFile = filePath.toFile();
-
+                        
                         if (!resumeFile.exists() || resumeFile.length() == 0) {
                             log.warn("Resume file not created or empty: {}", filePath);
                             return null;
                         }
-
+                        
                         Portrait portrait = portraitGenerator.generatePortrait(profile, resumeFile);
                         profile.setPortraitId(portrait.getId());
 
@@ -575,7 +575,7 @@ public class TestDataGenerator {
 
     private void generateCompleteApplications(List<Application> applications, List<Position> positions, List<TAProfile> taProfiles) {
         log.info("Starting AI generation for application feedback...");
-
+        
         List<Application> targetApplications = applications.stream()
                 .filter(app -> app.getStatus() == 1 || app.getStatus() == 2)
                 .toList();
@@ -584,15 +584,15 @@ public class TestDataGenerator {
             log.info("No applications with status 1 or 2 found. Skipping feedback generation.");
             return;
         }
-
+        
         Map<String, Position> positionMap = positions.stream()
                 .collect(Collectors.toMap(Position::getId, p -> p));
-
+        
         Map<String, String> applicantNameMap = taProfiles.stream()
                 .collect(Collectors.toMap(TAProfile::getUserId, TAProfile::getName));
-
+        
         List<Application> successList = Collections.synchronizedList(new ArrayList<>());
-
+        
         targetApplications.parallelStream()
                 .forEach(application -> {
                     try {
@@ -603,15 +603,15 @@ public class TestDataGenerator {
                         }
 
                         String applicantName = applicantNameMap.getOrDefault(application.getUserId(), "Candidate");
-
+                        
                         String feedback = generateApplicationFeedback(application.getStatus(), position, applicantName);
-
+                        
                         application.setFeedback(feedback);
-
+                        
                         successList.add(application);
 
-                        log.debug("Generated feedback for application: {} (Status: {}, Applicant: {})",
-                                application.getId(),
+                        log.debug("Generated feedback for application: {} (Status: {}, Applicant: {})", 
+                                application.getId(), 
                                 application.getStatus() == 1 ? "Offered" : "Rejected",
                                 applicantName);
                     } catch (Exception e) {
@@ -619,7 +619,7 @@ public class TestDataGenerator {
                     }
                 });
 
-        log.info("Completed application feedback generation: {}/{} successful",
+        log.info("Completed application feedback generation: {}/{} successful", 
                 successList.size(), targetApplications.size());
     }
 
@@ -671,8 +671,8 @@ public class TestDataGenerator {
     }
 
     private String generateResumeMarkdown(String name, String major, String degree, int year,
-                                          String college, List<String> skills,
-                                          String email, String phone) throws Exception {
+                                                 String college, List<String> skills,
+                                                 String email, String phone) throws Exception {
         String apiKey = QwenConfiguration.getInstance().getApiKey();
 
         String prompt = """
@@ -712,8 +712,8 @@ public class TestDataGenerator {
     }
 
     private void saveAllData(List<User> users, List<TAProfile> taProfiles,
-                             List<MOProfile> moProfiles, List<Position> positions,
-                             List<Application> applications, List<Portrait> portraits) throws IOException {
+                                    List<MOProfile> moProfiles, List<Position> positions,
+                                    List<Application> applications, List<Portrait> portraits) throws IOException {
         log.info("Saving data to JSON files...");
 
         userRepo.saveAllEntities(users);

@@ -35,8 +35,8 @@
             </div>
 
             <nav class="nav-menu">
-                <a href="taServlet?action=listApplied&page=1" class="nav-item">Home</a>
-                <a href="taServlet?action=listPositions&page=1" class="nav-item active">Position</a>
+                <a href="taServlet?action=listApplied&page=1&filter=all&order=applyAt" class="nav-item">Home</a>
+                <a href="taServlet?action=listPositions&page=1&filter=all&order=postDate" class="nav-item active">Position</a>
                 <a href="taServlet?action=getProfile" class="nav-item">Profile</a>
             </nav>
         </div>
@@ -46,11 +46,43 @@
 <main class="main-content">
     <div class="content-wrapper">
         <div class="main-container">
-            <h1 class="page-title">Available Positions</h1>
+            <div class="page-header">
+                <h1 class="page-title">Available Positions</h1>
+
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="filterSelect">Filter:</label>
+                        <select id="filterSelect" class="filter-select">
+                            <option value="all" ${condition.filter == 'all' || empty condition.filter ? 'selected' : ''}>All</option>
+                            <option value="opened" ${condition.filter == 'opened' ? 'selected' : ''}>Opened</option>
+                            <option value="closedFilled" ${condition.filter == 'closed|filled' || condition.filter == 'closed/filled' ? 'selected' : ''}>Closed/Filled</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="orderSelect">Sort by:</label>
+                        <select id="orderSelect" class="filter-select">
+                            <option value="postDate" ${condition.order == 'postDate' || empty condition.order ? 'selected' : ''}>Post Date</option>
+                            <option value="deadline" ${condition.order == 'deadline' ? 'selected' : ''}>Deadline</option>
+                            <option value="vacancy" ${condition.order == 'vacancy' ? 'selected' : ''}>Vacancy</option>
+                            <option value="workload" ${condition.order == 'workload' ? 'selected' : ''}>Workload</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="searchKeySelect">Search in:</label>
+                        <select id="searchKeySelect" class="filter-select">
+                            <option value="title" ${condition.key == 'title' || empty condition.key ? 'selected' : ''}>Title</option>
+                            <option value="moduleCode" ${condition.key == 'moduleCode' ? 'selected' : ''}>Module Code</option>
+                            <option value="moduleName" ${condition.key == 'moduleName' ? 'selected' : ''}>Module Name</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
 
             <div class="search-container">
                 <div class="search-box">
-                    <input type="text" class="search-input" placeholder="Search positions by title or module code..." id="searchInput">
+                    <input type="text" class="search-input" placeholder="Search positions..." id="searchInput" value="${not empty condition.search ? condition.search : ''}">
                     <button class="search-btn">Search</button>
                 </div>
             </div>
@@ -127,7 +159,7 @@
 
                                 <div class="card-actions">
                                     <button class="btn-view-position"
-                                            onclick="viewPosition('${pos.posId}', '${pos.appId != null ? pos.appId : ''}', ${currentPage})">
+                                            onclick="viewPosition('${pos.posId}', '${pos.appId != null ? pos.appId : ''}', ${condition.page})">
                                         View Details
                                     </button>
                                 </div>
@@ -136,17 +168,17 @@
                     </div>
 
                     <div class="pagination">
-                        <c:if test="${currentPage > 1}">
-                            <a class="page-item" data-page="${currentPage - 1}">«</a>
+                        <c:if test="${condition.page > 1}">
+                            <a class="page-item" data-page="${condition.page - 1}">«</a>
                         </c:if>
 
                         <c:forEach begin="1" end="${totalPages}" var="i">
-                            <a class="page-item ${currentPage == i ? 'active' : ''}"
+                            <a class="page-item ${condition.page == i ? 'active' : ''}"
                                data-page="${i}">${i}</a>
                         </c:forEach>
 
-                        <c:if test="${currentPage < totalPages}">
-                            <a class="page-item" data-page="${currentPage + 1}">»</a>
+                        <c:if test="${condition.page < totalPages}">
+                            <a class="page-item" data-page="${condition.page + 1}">»</a>
                         </c:if>
                     </div>
                 </c:otherwise>

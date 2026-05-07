@@ -2,6 +2,7 @@ package com.tars.controller;
 
 import com.tars.entity.bean.Application;
 import com.tars.entity.bean.TAProfile;
+import com.tars.entity.dto.QueryCondition;
 import com.tars.entity.dto.ta.AppPosDTO;
 import com.tars.entity.dto.ta.PosBriefDTO;
 import com.tars.entity.dto.ta.PosDetailDTO;
@@ -19,6 +20,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -37,7 +39,7 @@ import java.util.Map;
         maxFileSize = 1024 * 1024 * 10,      // 10MB - maximum file size allowed
         maxRequestSize = 1024 * 1024 * 50    // 50MB - maximum request size (files + form data)
 )
-public class TAServlet extends BaseServlet{
+public class TAServlet extends BaseServlet {
 
     private TAService taService;
 
@@ -48,32 +50,18 @@ public class TAServlet extends BaseServlet{
     }
 
     private void listApplied(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String pageParam = req.getParameter("page");
-        if (pageParam == null || pageParam.trim().isEmpty()) {
-            pageParam = "1";
-        }
-        
-        int page;
-        try {
-            page = Integer.parseInt(pageParam);
-            if (page < 1) {
-                page = 1;
-            }
-        } catch (NumberFormatException e) {
-            log.warn("Invalid page number: {}", pageParam);
-            page = 1;
-        }
-        
+        QueryCondition condition = BeanUtils.mapFromReq(req, QueryCondition.class);
+
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
-        
-        String userId = ((UserDTO)userObj).getId();
-        log.info("TA user {} requesting applied positions list, page: {}", userId, page);
-        
-        List<AppPosDTO> appPosList = taService.getAppPosList(userId, page);
-        long totalPages = taService.getAppPosPages(userId);
+
+        String userId = ((UserDTO) userObj).getId();
+        log.info("TA user {} requesting applied positions list, page: {}", userId, condition.getPage());
+
+        List<AppPosDTO> appPosList = taService.getAppPosList(userId, condition);
+        long totalPages = taService.getAppPosPages(userId, condition);
         req.setAttribute("appliedList", appPosList);
-        req.setAttribute("currentPage", page);
+        req.setAttribute("condition", condition);
         req.setAttribute("totalPages", totalPages);
         req.getRequestDispatcher("/views/ta/home.jsp").forward(req, resp);
     }
@@ -89,7 +77,7 @@ public class TAServlet extends BaseServlet{
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
 
         taService.withdrawApplication(appId, userId);
 
@@ -99,33 +87,19 @@ public class TAServlet extends BaseServlet{
     }
 
     private void listPositions(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String pageParam = req.getParameter("page");
-        if (pageParam == null || pageParam.trim().isEmpty()) {
-            pageParam = "1";
-        }
-
-        int page;
-        try {
-            page = Integer.parseInt(pageParam);
-            if (page < 1) {
-                page = 1;
-            }
-        } catch (NumberFormatException e) {
-            log.warn("Invalid page number: {}", pageParam);
-            page = 1;
-        }
+        QueryCondition condition = BeanUtils.mapFromReq(req, QueryCondition.class);
 
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
 
-        String userId = ((UserDTO)userObj).getId();
-        log.info("TA user {} requesting positions list, page: {}", userId, page);
+        String userId = ((UserDTO) userObj).getId();
+        log.info("TA user {} requesting positions list, page: {}", userId, condition.getPage());
 
-        List<PosBriefDTO> positionList = taService.getPositionList(userId, page);
-        long totalPages = taService.getPositionPages();
+        List<PosBriefDTO> positionList = taService.getPositionList(userId, condition);
+        long totalPages = taService.getPositionPages(condition);
         req.setAttribute("positionList", positionList);
-        req.setAttribute("currentPage", page);
+        req.setAttribute("condition", condition);
         req.setAttribute("totalPages", totalPages);
         req.getRequestDispatcher("/views/ta/positions.jsp").forward(req, resp);
     }
@@ -155,12 +129,12 @@ public class TAServlet extends BaseServlet{
     private void viewPosition(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String posId = req.getParameter("posId");
         String appId = req.getParameter("appId");
-        String page = req.getParameter("page");
+        QueryCondition condition = BeanUtils.mapFromReq(req, QueryCondition.class);
         String from = req.getParameter("from");
 
         PosDetailDTO pos = taService.getPosition(posId, appId);
         req.setAttribute("position", pos);
-        req.setAttribute("page", page);
+        req.setAttribute("condition", condition);
         req.setAttribute("from", from != null ? from : "positions");
         req.getRequestDispatcher("/views/ta/positionDetail.jsp").forward(req, resp);
     }
@@ -171,7 +145,7 @@ public class TAServlet extends BaseServlet{
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
 
         if (!taService.verifyProfileExists(userId)) {
             log.warn("User {} has not completed profile, cannot apply", userId);
@@ -190,7 +164,7 @@ public class TAServlet extends BaseServlet{
         application.setUserId(userId);
         application.setStatus(0);
         boolean applied = taService.createApplication(application);
-        
+
         if (applied) {
             Map<String, String> data = new HashMap<>();
             data.put("appId", application.getId());
@@ -205,9 +179,9 @@ public class TAServlet extends BaseServlet{
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
         ProfileDTO profile = taService.getProfileDTO(userId);
-        
+
         if (profile == null) {
             log.warn("Profile not found for user {}", userId);
             req.setAttribute("warn", "Profile not found. Please create your profile first.");
@@ -228,7 +202,7 @@ public class TAServlet extends BaseServlet{
 
     private void downloadResume(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String fileName = req.getParameter("file");
-        
+
         // Validate and sanitize the file path
         String sanitizedPath = FileUtils.sanitizePath(fileName);
         if (sanitizedPath == null) {
@@ -238,10 +212,10 @@ public class TAServlet extends BaseServlet{
         }
 
         String webRootPath = getServletContext().getRealPath("");
-        
+
         // Serve the file securely using FileUtils
         try {
-            FileUtils.serveFile(req, resp, webRootPath, sanitizedPath);
+            FileUtils.serveFile(req, resp, sanitizedPath);
         } catch (IOException e) {
             log.error("Error serving file: {}", sanitizedPath, e);
             throw e;
@@ -252,7 +226,7 @@ public class TAServlet extends BaseServlet{
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
         log.info("Updating profile for TA user {}", userId);
 
         try {
@@ -271,39 +245,55 @@ public class TAServlet extends BaseServlet{
             // Step 3: Handle file upload (if any)
             Part resumePart = FileUtils.getFilePart(req, "resume");
             String webRootPath = getServletContext().getRealPath("");
+
+
+            boolean resumeUpdated = false;
+            File resumeFile = null;
             
             if (resumePart != null && resumePart.getSize() > 0) {
                 // User uploaded a new resume
                 log.info("New resume detected, processing upload...");
-                
+
                 // Save new file
-                String newPath = FileUtils.savePdfFile(resumePart, webRootPath, "resumes");
+                String newPath = FileUtils.savePdfFile(resumePart, "resumes");
                 String originalFileName = Paths.get(resumePart.getSubmittedFileName()).getFileName().toString();
-                
+
                 // Set new file info
                 updatedProfile.setResumePath(newPath);
                 updatedProfile.setResumeName(originalFileName);
-                
+
                 // Delete old file if exists
                 if (existingProfile.getResumePath() != null) {
-                    boolean deleted = FileUtils.deleteFile(webRootPath, existingProfile.getResumePath());
+                    boolean deleted = FileUtils.deleteFile(existingProfile.getResumePath());
                     if (deleted) {
                         log.info("Old resume deleted: {}", existingProfile.getResumePath());
                     } else {
                         log.warn("Failed to delete old resume: {}", existingProfile.getResumePath());
                     }
                 }
+                resumeUpdated = true;
             } else {
-                // No new file, keep existing resume info
+                // No new file, keep existing resume info and create File object
                 updatedProfile.setResumePath(existingProfile.getResumePath());
                 updatedProfile.setResumeName(existingProfile.getResumeName());
-                log.info("No new resume uploaded, keeping existing file");
+                
+                // Create File object from existing resume path if it exists
+                if (existingProfile.getResumePath() != null) {
+                    resumeFile = FileUtils.getFileFromRelativePath(existingProfile.getResumePath());
+                    if (resumeFile != null) {
+                        log.info("Created File object from existing resume: {}", existingProfile.getResumePath());
+                    } else {
+                        log.warn("Resume file does not exist for path: {}", existingProfile.getResumePath());
+                    }
+                } else {
+                    log.info("No resume file exists");
+                }
             }
 
             // Step 4: Merge updated fields into existing profile
             // Ignore system fields that shouldn't be updated via form
-            BeanUtils.merge(updatedProfile, existingProfile, 
-                           "id", "userId", "createAt", "updateAt");
+            BeanUtils.merge(updatedProfile, existingProfile,
+                    "id", "userId", "createAt", "updateAt");
 
             // Step 5: Update timestamp
             existingProfile.setUpdateAt(java.sql.Timestamp.valueOf(java.time.LocalDateTime.now()));
@@ -316,7 +306,12 @@ public class TAServlet extends BaseServlet{
             }
 
             // Step 7: Save to database
-            boolean success = taService.updateProfile(existingProfile);
+            boolean success = false;
+            if (resumeUpdated) {
+                success = taService.updateProfile(existingProfile, resumePart);
+            } else if (resumeFile != null) {
+                success = taService.updateProfile(existingProfile, resumeFile);
+            }
 
             if (success) {
                 log.info("Profile updated successfully for user {}", userId);
@@ -346,7 +341,7 @@ public class TAServlet extends BaseServlet{
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
-        String userId = ((UserDTO)userObj).getId();
+        String userId = ((UserDTO) userObj).getId();
 
         boolean exist = taService.checkProfileExist(userId);
         if (exist) {
@@ -359,35 +354,34 @@ public class TAServlet extends BaseServlet{
 
         try {
             TAProfile profile = BeanUtils.mapFromReq(req, TAProfile.class);
-            
+
             profile.setUserId(userId);
-            
+
             Part resumePart = FileUtils.getFilePart(req, "resume");
-            
+
             if (resumePart == null || resumePart.getSize() == 0) {
                 req.setAttribute("error", "Resume is required when creating profile");
                 req.getRequestDispatcher("/views/ta/profile.jsp").forward(req, resp);
                 return;
             }
-            
+
             String originalFileName = Paths.get(resumePart.getSubmittedFileName()).getFileName().toString();
             profile.setResumeName(originalFileName);
-            
-            String webRootPath = getServletContext().getRealPath("");
-            String resumePath = FileUtils.savePdfFile(resumePart, webRootPath, "resumes");
+
+            String resumePath = FileUtils.savePdfFile(resumePart, "resumes");
             profile.setResumePath(resumePath);
-            
-            log.info("Resume uploaded successfully - Original name: {}, Saved path: {}", 
+
+            log.info("Resume uploaded successfully - Original name: {}, Saved path: {}",
                     originalFileName, resumePath);
-            
+
             if (profile.getName() == null || profile.getName().trim().isEmpty()) {
                 req.setAttribute("error", "Name is required");
                 req.getRequestDispatcher("/views/ta/profile.jsp").forward(req, resp);
                 return;
             }
-            
-            boolean created = taService.createProfile(profile);
-            
+
+            boolean created = taService.createProfile(profile, resumePart);
+
             if (created) {
                 log.info("Profile created successfully for user {}", userId);
                 resp.sendRedirect(req.getContextPath() + "/taServlet?action=getProfile&success=created");
@@ -396,7 +390,7 @@ public class TAServlet extends BaseServlet{
                 req.setAttribute("error", "Failed to create profile");
                 req.getRequestDispatcher("/views/ta/profile.jsp").forward(req, resp);
             }
-            
+
         } catch (IllegalArgumentException e) {
             log.error("Invalid parameter format: {}", e.getMessage(), e);
             req.setAttribute("error", "Invalid data format: " + e.getMessage());
