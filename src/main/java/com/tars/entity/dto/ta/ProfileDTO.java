@@ -24,7 +24,7 @@ public class ProfileDTO {
 
     private String major;
 
-    private String degree;
+    private String degree; // BACHELOR, MASTER, PHD
 
     private int year;
 

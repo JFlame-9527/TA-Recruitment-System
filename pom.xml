@@ -6,7 +6,7 @@
 
     <groupId>com.flame</groupId>
     <artifactId>TA-Recruitment-System</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>4.0.0</version>
     <packaging>war</packaging>
 
     <properties>
@@ -120,6 +120,17 @@
     <build>
         <finalName>TA-Recruitment-System</finalName>
 
+        <!-- Ensure test resources are not included in main build -->
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <excludes>
+                    <exclude>data/**</exclude>
+                    <exclude>upload/**</exclude>
+                </excludes>
+            </testResource>
+        </testResources>
+
         <plugins>
             <!-- Maven Compiler Plugin -->
             <plugin>
@@ -155,6 +166,12 @@
                     <webXml>src/main/webapp/WEB-INF/web.xml</webXml>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
                     <warName>web</warName>
+                    <!-- Exclude all generated data and config files -->
+                    <packagingExcludes>
+                        WEB-INF/classes/data/**,
+                        WEB-INF/classes/upload/**,
+                        WEB-INF/classes/test-data/**,
+                    </packagingExcludes>
                 </configuration>
             </plugin>
 
@@ -168,6 +185,29 @@
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
+                    <!-- Clean up test data after tests -->
+                    <systemPropertyVariables>
+                        <java.io.tmpdir>${project.build.directory}/test-temp</java.io.tmpdir>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Clean Plugin - ensure clean removes generated data -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.3.2</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>src/main/webapp/data</directory>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                        <fileset>
+                            <directory>src/main/webapp/upload</directory>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                    </filesets>
                 </configuration>
             </plugin>
         </plugins>

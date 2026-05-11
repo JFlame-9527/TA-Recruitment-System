@@ -10,7 +10,6 @@ import com.tars.config.QwenConfiguration;
 import com.tars.entity.bean.*;
 import com.tars.repository.JsonRepository;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -33,7 +32,7 @@ import java.util.stream.Collectors;
  * Generates realistic test data for all entities with AI-enhanced descriptions
  *
  * @author mei1234567554
- * @version 3.0.0
+ * @version 4.0.0
  * @since 2026/4/7
  */
 @Slf4j
@@ -406,14 +405,14 @@ public class TestDataGenerator {
         List<Application> applications = new ArrayList<>();
 
         List<Position> openPositions = positions.stream()
-                .filter(p -> rd.nextBoolean())
+                .filter(p -> rd.nextInt(3) < 2)
                 .filter(p -> p.getStatus() == 0)
                 .toList();
 
         List<User> taUsers = users.stream().filter(u -> u.getRole() == 1 && u.getStatus() == 0).toList();
 
         for (Position position : openPositions) {
-            int numApplications = rd.nextInt(1, taUsers.size() / 3 * 2);
+            int numApplications = rd.nextInt(1, taUsers.size());
             for (int i = 0, userIdx = rd.nextInt(taUsers.size()); i < numApplications; i++, userIdx++) {
                 if (userIdx >= taUsers.size()) {
                     userIdx = 0;
@@ -447,7 +446,7 @@ public class TestDataGenerator {
         log.info("Starting AI generation for TA resumes and portraits...");
 
         PortraitGenerator portraitGenerator = new PortraitGenerator();
-        
+
         // Get absolute path for file writing
         String absoluteResumeDir = com.tars.config.ApplicationConfiguration.getInstance().getFilePath();
 
@@ -467,23 +466,23 @@ public class TestDataGenerator {
 
                         // Use absolute path to write file (includes subdirectory)
                         Path filePath = Paths.get(absoluteResumeDir, profile.getResumePath());
-                        
+
                         // Ensure parent directory exists
                         Path parentDir = filePath.getParent();
                         if (parentDir != null && !Files.exists(parentDir)) {
                             Files.createDirectories(parentDir);
                             log.debug("Created subdirectory: {}", parentDir);
                         }
-                        
+
                         Files.writeString(filePath, markdownResume, StandardCharsets.UTF_8);
-                        
+
                         File resumeFile = filePath.toFile();
-                        
+
                         if (!resumeFile.exists() || resumeFile.length() == 0) {
                             log.warn("Resume file not created or empty: {}", filePath);
                             return null;
                         }
-                        
+
                         Portrait portrait = portraitGenerator.generatePortrait(profile, resumeFile);
                         profile.setPortraitId(portrait.getId());
 
@@ -603,15 +602,15 @@ public class TestDataGenerator {
                         }
 
                         String applicantName = applicantNameMap.getOrDefault(application.getUserId(), "Candidate");
-                        
+
                         String feedback = generateApplicationFeedback(application.getStatus(), position, applicantName);
-                        
+
                         application.setFeedback(feedback);
-                        
+
                         successList.add(application);
 
-                        log.debug("Generated feedback for application: {} (Status: {}, Applicant: {})", 
-                                application.getId(), 
+                        log.debug("Generated feedback for application: {} (Status: {}, Applicant: {})",
+                                application.getId(),
                                 application.getStatus() == 1 ? "Offered" : "Rejected",
                                 applicantName);
                     } catch (Exception e) {
@@ -619,7 +618,7 @@ public class TestDataGenerator {
                     }
                 });
 
-        log.info("Completed application feedback generation: {}/{} successful", 
+        log.info("Completed application feedback generation: {}/{} successful",
                 successList.size(), targetApplications.size());
     }
 

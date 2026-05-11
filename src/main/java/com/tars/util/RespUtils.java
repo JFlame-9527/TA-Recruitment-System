@@ -66,6 +66,10 @@ public class RespUtils {
         writeJson(resp, Msg.error(message), statusCode);
     }
 
+    public static <T> void writeError(HttpServletResponse resp, T data, String message, int statusCode) throws IOException {
+        writeJson(resp, Msg.error(data, message), statusCode);
+    }
+
     /**
      * Write custom response
      */

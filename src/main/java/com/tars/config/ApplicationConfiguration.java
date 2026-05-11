@@ -10,6 +10,10 @@ import jakarta.servlet.ServletContext;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.InputStream;
@@ -19,7 +23,7 @@ import java.io.InputStream;
  * Handles environment settings and data initialization
  *
  * @author Jflame
- * @version 3.0.0
+ * @version 4.0.0
  * @since 2026/5/1
  */
 @Getter
@@ -155,6 +159,8 @@ public class ApplicationConfiguration {
 
         validateEnvironment(configData.environment());
 
+        configureLoggingLevel(configData.environment());
+
         instance = new ApplicationConfiguration(
                 configData.environment(),
                 configData.cleanData(),
@@ -169,6 +175,23 @@ public class ApplicationConfiguration {
         log.info("Generate Data: {}", instance.generateData);
         log.info("Data Dir: {}", instance.dataDir);
         log.info("File Dir: {}", instance.fileDir);
+    }
+
+    /**
+     * Configure logging level based on environment
+     */
+    private static void configureLoggingLevel(String environment) {
+        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+        ch.qos.logback.classic.Logger rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
+
+        if ("prod".equalsIgnoreCase(environment)) {
+            rootLogger.setLevel(Level.INFO);
+            System.out.println("Production mode: Logging level set to INFO");
+        } else {
+            // Dev, Test, etc.
+            rootLogger.setLevel(Level.DEBUG);
+            System.out.println("Development mode: Logging level set to DEBUG");
+        }
     }
 
     private static ConfigData loadConfigData(String webAppRootPath) {
@@ -239,29 +262,84 @@ public class ApplicationConfiguration {
     }
 
     private static void executeDataOperations() {
-        if (!instance.cleanData && !instance.generateData) {
-            log.info("No data operations required");
-            return;
-        }
-
         log.info("Executing data operations...");
 
         try {
             if (instance.cleanData) {
+                // Clean mode: clear all data and recreate admin
                 cleanDataDirectory();
-                log.info("Data directory cleaned successfully");
-
                 createAdminAccount();
-                log.info("Admin account created successfully");
+                log.info("Data directory cleaned and admin account created");
 
-                if ("dev".equalsIgnoreCase(instance.environment) && instance.generateData) {
+                if (("dev".equalsIgnoreCase(instance.environment) || "test".equalsIgnoreCase(instance.environment)) && instance.generateData) {
                     log.info("Development mode with data generation enabled");
                     generateTestData();
                 }
+            } else {
+                // Normal mode: check data integrity
+                ensureDataIntegrity();
             }
         } catch (Exception e) {
             log.error("Failed to execute data operations", e);
             throw new RuntimeException("Data operations failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Ensure data integrity on normal startup
+     */
+    private static void ensureDataIntegrity() {
+        File dataDir = new File(instance.getDataPath());
+        
+        // Check if data directory exists
+        if (!dataDir.exists()) {
+            log.info("Data directory does not exist, creating initial setup...");
+            dataDir.mkdirs();
+            createAdminAccount();
+            log.info("Initial setup completed with admin account");
+            return;
+        }
+
+        // Data directory exists, check if it's empty (no user files)
+        File userFile = new File(dataDir, "user.json");
+        if (!userFile.exists()) {
+            log.info("Data directory exists but is empty, creating initial setup...");
+            createAdminAccount();
+            log.info("Initial setup completed with admin account");
+            return;
+        }
+
+        // User file exists, check if admin account exists
+        if (!isAdminAccountExists()) {
+            log.error("CRITICAL: Admin account not found in existing data directory!");
+            log.error("This may indicate data tampering or corruption.");
+            log.error("Please restore from backup or set cleanData=true to reset.");
+            throw new RuntimeException("Admin account missing - data integrity check failed");
+        }
+
+        log.info("Data integrity check passed - admin account exists");
+    }
+
+    /**
+     * Check if admin account exists
+     */
+    private static boolean isAdminAccountExists() {
+        try {
+            JsonRepository<User> userRepo = new JsonRepository<>(User.class);
+            java.util.List<User> users = userRepo.loadAllEntities();
+            
+            if (users == null || users.isEmpty()) {
+                return false;
+            }
+
+            // Check if any user has role=0 (admin) and name="admin"
+            return users.stream()
+                    .anyMatch(user -> user != null 
+                            && user.getRole() == 0 
+                            && "admin".equals(user.getName()));
+        } catch (Exception e) {
+            log.error("Failed to check admin account existence", e);
+            return false;
         }
     }
 
@@ -327,8 +405,8 @@ public class ApplicationConfiguration {
             throw new IllegalArgumentException("Environment cannot be null or empty");
         }
         
-        if (!"dev".equalsIgnoreCase(environment) && !"prod".equalsIgnoreCase(environment)) {
-            log.warn("Unknown environment: {}. Expected 'dev' or 'prod'", environment);
+        if (!"dev".equalsIgnoreCase(environment) && !"prod".equalsIgnoreCase(environment) && !"test".equalsIgnoreCase(environment)) {
+            log.warn("Unknown environment: {}. Expected 'dev', 'test' or 'prod'", environment);
         }
     }
 

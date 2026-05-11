@@ -128,6 +128,10 @@ public class FileUtils {
      * @return The Part object if found with content, null otherwise
      */
     public static Part getFilePart(HttpServletRequest req, String fieldName) {
+        if (req == null || fieldName == null || fieldName.trim().isEmpty()) {
+            return null;
+        }
+        
         try {
             for (Part part : req.getParts()) {
                 if (fieldName.equals(part.getName()) && part.getSize() > 0) {

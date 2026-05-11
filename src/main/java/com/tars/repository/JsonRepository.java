@@ -77,14 +77,20 @@ public class JsonRepository<T> {
     public T getEntityById(String id) throws IOException {
         List<T> entities = loadAllEntities();
         return entities.stream()
-                .filter(e -> getIdValue(e).equals(id))
+                .filter(e -> {
+                    String entityId = getIdValue(e);
+                    return entityId != null && entityId.equals(id);
+                })
                 .findFirst()
                 .orElse(null);
     }
 
     public boolean deleteEntity(String id) throws IOException {
         List<T> entities = loadAllEntities();
-        boolean removed = entities.removeIf(e -> getIdValue(e).equals(id));
+        boolean removed = entities.removeIf(e -> {
+            String entityId = getIdValue(e);
+            return entityId != null && entityId.equals(id);
+        });
 
         if (removed) {
             saveAllEntities(entities);

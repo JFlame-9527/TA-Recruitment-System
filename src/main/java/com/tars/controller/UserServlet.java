@@ -1,5 +1,6 @@
 package com.tars.controller;
 
+import com.google.code.kaptcha.Constants;
 import com.tars.entity.bean.User;
 import com.tars.entity.dto.user.UserDTO;
 import com.tars.service.UserService;
@@ -24,7 +25,13 @@ import java.util.Map;
 public class UserServlet extends BaseServlet {
 
     private static final Logger log = LoggerFactory.getLogger(UserServlet.class);
+
     private UserService userService;
+
+    public static final String KAPTCHA_SESSION_KEY = "KAPTCHA_SESSION_KEY";
+    public static final String KAPTCHA_SESSION_DATE = "KAPTCHA_SESSION_DATE";
+    public static final String LOGIN_FAIL_COUNT = "LOGIN_FAIL_COUNT";
+    public static final long CAPTCHA_EXPIRY_TIME = 60000; // 60 seconds
 
     @Override
     public void init() throws ServletException {
@@ -35,6 +42,42 @@ public class UserServlet extends BaseServlet {
     private void login(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String username = req.getParameter("username");
         String password = req.getParameter("password");
+        String captcha = req.getParameter("captcha");
+
+        Integer failCount = (Integer) req.getSession().getAttribute(LOGIN_FAIL_COUNT);
+        if (failCount == null) {
+            failCount = 0;
+        }
+
+        boolean requireCaptcha = failCount >= 1;
+
+        if (requireCaptcha) {
+            if (captcha == null || captcha.trim().isEmpty()) {
+                RespUtils.writeError(resp, "Please enter verification code", HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+
+            String sessionCaptcha = (String) req.getSession().getAttribute(KAPTCHA_SESSION_KEY);
+            Long captchaTime = (Long) req.getSession().getAttribute(KAPTCHA_SESSION_DATE);
+
+            if (sessionCaptcha == null || captchaTime == null) {
+                RespUtils.writeError(resp, "Verification code expired, please refresh", HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - captchaTime > CAPTCHA_EXPIRY_TIME) {
+                req.getSession().removeAttribute(KAPTCHA_SESSION_KEY);
+                req.getSession().removeAttribute(KAPTCHA_SESSION_DATE);
+                RespUtils.writeError(resp, "Verification code expired, please refresh", HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+
+            if (!sessionCaptcha.equalsIgnoreCase(captcha.trim())) {
+                RespUtils.writeError(resp, "Invalid verification code", HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+        }
 
         password = userService.encryptPassword(password);
 
@@ -47,14 +90,30 @@ public class UserServlet extends BaseServlet {
             }
             
             req.getSession().setAttribute("user", user);
+            req.getSession().removeAttribute(LOGIN_FAIL_COUNT);
+            req.getSession().removeAttribute(KAPTCHA_SESSION_KEY);
+            req.getSession().removeAttribute(KAPTCHA_SESSION_DATE);
             
             Map<String, Object> data = new HashMap<>();
             data.put("role", user.getRole());
             data.put("redirectUrl", getRedirectUrl(user.getRole()));
+            data.put("requireCaptcha", false);
             
             RespUtils.writeSuccess(resp, data, "Login successful");
         } else {
-            RespUtils.writeError(resp, "Invalid username or password", HttpServletResponse.SC_UNAUTHORIZED);
+            failCount++;
+            req.getSession().setAttribute(LOGIN_FAIL_COUNT, failCount);
+            
+            Map<String, Object> errorData = new HashMap<>();
+            errorData.put("requireCaptcha", failCount >= 1);
+            errorData.put("failCount", failCount);
+            
+            String message = "Invalid username or password";
+            if (failCount >= 1) {
+                message = "Invalid username or password. Verification code required.";
+            }
+            
+            RespUtils.writeError(resp, errorData, message, HttpServletResponse.SC_UNAUTHORIZED);
         }
     }
 
@@ -153,4 +212,16 @@ public class UserServlet extends BaseServlet {
 
         resp.sendRedirect(req.getContextPath() + "/");
     }
+
+    private void getCaptchaStatus(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        Integer failCount = (Integer) req.getSession().getAttribute(LOGIN_FAIL_COUNT);
+        boolean requireCaptcha = failCount != null && failCount >= 1;
+        
+        Map<String, Object> data = new HashMap<>();
+        data.put("requireCaptcha", requireCaptcha);
+        data.put("failCount", failCount != null ? failCount : 0);
+        
+        RespUtils.writeSuccess(resp, data);
+    }
+
 }

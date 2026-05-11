@@ -1,7 +1,7 @@
 {
-  "environment": "prod",
+  "environment": "test",
   "active": {
-    "cleanData": false,
+    "cleanData": true,
     "generateData": false
   },
   "paths": {

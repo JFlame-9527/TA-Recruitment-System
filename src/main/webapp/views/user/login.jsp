@@ -43,6 +43,14 @@
                                placeholder="password" required>
                     </div>
 
+                    <div class="form-group" id="captchaGroup" style="display: none;">
+                        <div class="captcha-container">
+                            <input type="text" id="captcha" name="captcha" class="form-control captcha-input"
+                                   placeholder="verification code" maxlength="4">
+                            <img id="captchaImg" src="captcha" alt="Verification Code" class="captcha-img" title="Click to refresh">
+                        </div>
+                    </div>
+
                     <c:if test="${not empty error}">
                         <div class="alert alert-danger">
                             <span>${error}</span>

@@ -83,7 +83,7 @@ public class FileParser {
         String fileName = file.getName();
         log.info("Uploading file: {}", fileName);
 
-        int maxRetries = 3;
+        int maxRetries = 5;
         int retryCount = 0;
         
         while (retryCount < maxRetries) {
@@ -96,7 +96,7 @@ public class FileParser {
                 
                 if (e.getMessage() != null && e.getMessage().contains("429")) {
                     if (retryCount < maxRetries) {
-                        long waitTime = 3000;
+                        long waitTime = (long) (3000 * Math.pow(2, retryCount));
                         log.warn("Rate limit exceeded. Retry {}/{} after {}ms...", retryCount, maxRetries, waitTime);
                         
                         try {

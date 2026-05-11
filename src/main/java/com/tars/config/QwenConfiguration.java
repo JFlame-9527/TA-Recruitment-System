@@ -139,15 +139,25 @@ public class QwenConfiguration {
     }
 
     private static JsonNode loadConfigJson(ObjectMapper mapper, String webAppRootPath) {
-        try {
-            String externalConfigPath = webAppRootPath + File.separator + EXTERNAL_CONFIG_DIR + CONFIG_FILE;
-            File externalConfigFile = new File(externalConfigPath);
+        if (webAppRootPath != null && !webAppRootPath.isEmpty()) {
+            try {
+                String externalConfigPath = webAppRootPath + File.separator + EXTERNAL_CONFIG_DIR + CONFIG_FILE;
+                File externalConfigFile = new File(externalConfigPath);
 
-            if (externalConfigFile.exists()) {
-                log.info("Loading configuration from external file: {}", externalConfigFile.getAbsolutePath());
-                return mapper.readTree(externalConfigFile);
+                if (externalConfigFile.exists()) {
+                    log.info("Loading configuration from external file: {}", externalConfigFile.getAbsolutePath());
+                    return mapper.readTree(externalConfigFile);
+                }
+                
+                log.debug("External config file not found: {}", externalConfigPath);
+            } catch (Exception e) {
+                log.warn("Failed to load external config file: {}", e.getMessage());
             }
+        } else {
+            log.debug("webAppRootPath is null or empty, skipping external config");
+        }
 
+        try {
             InputStream resourceStream = QwenConfiguration.class.getClassLoader()
                     .getResourceAsStream(RESOURCE_CONFIG_PATH);
 
@@ -157,15 +167,14 @@ public class QwenConfiguration {
                 resourceStream.close();
                 return node;
             }
-
-            log.error("Configuration file not found in {} or classpath: {}",
-                    externalConfigPath, RESOURCE_CONFIG_PATH);
-            return null;
-
+            
+            log.debug("Classpath resource not found: {}", RESOURCE_CONFIG_PATH);
         } catch (Exception e) {
-            log.error("Error loading configuration file", e);
-            return null;
+            log.warn("Failed to load classpath config resource: {}", e.getMessage());
         }
+
+        log.error("Configuration file not found in external path or classpath: {}", CONFIG_FILE);
+        return null;
     }
 
     private static ModelOption parseModelOption(JsonNode rootNode, String modelName) {
