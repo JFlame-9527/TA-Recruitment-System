@@ -1,61 +1,96 @@
 $(document).ready(function() {
-    // Define modal elements
     const $messageModal = $('#messageModal');
     const $modalTitle = $('#modalTitle');
     const $modalBody = $('#modalBody');
     const $closeBtn = $('.close-modal');
     const $confirmBtn = $('#confirmModal');
     
-    // Register modal elements
     const $registerModal = $('#registerModal');
     const $registerForm = $('#registerForm');
     const $registerError = $('#registerError');
     const $regUsername = $('#reg_username');
     const $regPassword = $('#reg_password');
     const $regCheckPassword = $('#reg_checkpassword');
+    
+    const $captchaGroup = $('#captchaGroup');
+    const $captchaInput = $('#captcha');
+    const $captchaImg = $('#captchaImg');
 
-    // Show message modal function
+    let requireCaptcha = false;
+
     function showMessageModal(title, message) {
         $modalTitle.text(title);
         $modalBody.text(message);
         $messageModal.css('display', 'flex');
     }
 
-    // Hide message modal function
     function hideMessageModal() {
         $messageModal.fadeOut(200);
     }
 
-    // Show register modal
     function showRegisterModal() {
         $registerError.hide();
         $registerForm[0].reset();
         $registerModal.css('display', 'flex');
     }
 
-    // Hide register modal
     function hideRegisterModal() {
         $registerModal.fadeOut(200);
     }
 
-    // Show register error
     function showRegisterError(message) {
         $registerError.text(message).show();
     }
 
-    // Click "Forgot Password"
+    function showCaptcha() {
+        if (!requireCaptcha) {
+            requireCaptcha = true;
+            $captchaGroup.fadeIn(300);
+            refreshCaptcha();
+        }
+    }
+
+    function hideCaptcha() {
+        requireCaptcha = false;
+        $captchaGroup.hide();
+        $captchaInput.val('');
+    }
+
+    function refreshCaptcha() {
+        $captchaImg.attr('src', 'captcha?' + new Date().getTime());
+        $captchaInput.val('');
+        $captchaInput.focus();
+    }
+
+    async function checkCaptchaStatus() {
+        try {
+            const response = await $.ajax({
+                url: 'userServlet',
+                type: 'POST',
+                data: {
+                    action: 'getCaptchaStatus'
+                },
+                dataType: 'json'
+            });
+            
+            if (response.success && response.data.requireCaptcha) {
+                showCaptcha();
+            }
+        } catch (error) {
+            console.error('Check captcha status error:', error);
+        }
+    }
+
     $('#forgotPwd').on('click', function(e) {
         e.preventDefault();
         showMessageModal('Reset Password', 'Please contact administrator to reset password');
     });
 
-    // Click "Register Account" - open register modal
     $('#registerLink').on('click', function(e) {
         e.preventDefault();
         showRegisterModal();
     });
 
-    // Register form submission
     $registerForm.on('submit', async function(e) {
         e.preventDefault();
         
@@ -63,20 +98,17 @@ $(document).ready(function() {
         const password = $regPassword.val();
         const checkPassword = $regCheckPassword.val();
         
-        // Validate password match
         if (password !== checkPassword) {
             showRegisterError('Passwords do not match');
             return;
         }
         
-        // Validate password length
         if (password.length < 6) {
             showRegisterError('Password must be at least 6 characters');
             return;
         }
         
         try {
-            // Step 1: Check if username exists
             const checkResponse = await $.ajax({
                 url: 'userServlet',
                 type: 'POST',
@@ -92,7 +124,6 @@ $(document).ready(function() {
                 return;
             }
             
-            // Step 2: Execute registration
             const registerResponse = await $.ajax({
                 url: 'userServlet',
                 type: 'POST',
@@ -108,7 +139,6 @@ $(document).ready(function() {
                 hideRegisterModal();
                 showMessageModal('Success', registerResponse.message || 'Account created successfully! Please login.');
                 
-                // Clear form
                 $registerForm[0].reset();
             } else {
                 showRegisterError(registerResponse.message || 'Registration failed');
@@ -121,35 +151,35 @@ $(document).ready(function() {
         }
     });
 
-    // Close register modal
     $registerModal.find('.close-modal').on('click', hideRegisterModal);
     
-    // Click register modal background to close
     $registerModal.on('click', function(e) {
         if ($(e.target).is($registerModal)) {
             hideRegisterModal();
         }
     });
 
-    // Click message modal close button
     $closeBtn.on('click', hideMessageModal);
 
-    // Click message modal confirm button
     $confirmBtn.on('click', hideMessageModal);
 
-    // Click message modal background to close
     $messageModal.on('click', function(e) {
         if ($(e.target).is($messageModal)) {
             hideMessageModal();
         }
     });
 
-    // Simple validation or animation before form submission (optional)
+    $captchaImg.on('click', function(e) {
+        e.preventDefault();
+        refreshCaptcha();
+    });
+
     $('#loginForm').on('submit', async function(e) {
         e.preventDefault();
         
         const username = $('#username').val().trim();
         const password = $('#password').val();
+        const captcha = $captchaInput.val().trim();
         const $btn = $('#btn-login.btn-login');
         const originalText = $btn.text();
         
@@ -158,17 +188,28 @@ $(document).ready(function() {
             return false;
         }
         
+        if (requireCaptcha && !captcha) {
+            showMessageModal('Error', 'Please enter verification code');
+            return false;
+        }
+        
         $btn.text('Logging in...').prop('disabled', true);
         
         try {
+            const requestData = {
+                action: 'login',
+                username: username,
+                password: password
+            };
+            
+            if (requireCaptcha) {
+                requestData.captcha = captcha;
+            }
+            
             const response = await $.ajax({
                 url: 'userServlet',
                 type: 'POST',
-                data: {
-                    action: 'login',
-                    username: username,
-                    password: password
-                },
+                data: requestData,
                 dataType: 'json'
             });
             
@@ -180,6 +221,14 @@ $(document).ready(function() {
                 showMessageModal('Login Failed', response.message || 'Invalid username or password');
                 $btn.text(originalText).prop('disabled', false);
                 $('#password').val('');
+                
+                if (response.data && response.data.requireCaptcha) {
+                    showCaptcha();
+                }
+                
+                if (requireCaptcha) {
+                    refreshCaptcha();
+                }
             }
             
         } catch (error) {
@@ -187,9 +236,17 @@ $(document).ready(function() {
             let errorMsg = 'Network error, please try again';
             
             if (error.status === 401) {
-                errorMsg = 'Invalid username or password';
+                errorMsg = error.responseJSON ? error.responseJSON.message : 'Invalid username or password';
+                if (error.responseJSON && error.responseJSON.data && error.responseJSON.data.requireCaptcha) {
+                    showCaptcha();
+                }
             } else if (error.status === 403) {
                 errorMsg = error.responseJSON ? error.responseJSON.message : 'Account is frozen. Please contact administrator.';
+            } else if (error.status === 400) {
+                errorMsg = error.responseJSON ? error.responseJSON.message : 'Invalid verification code';
+                if (requireCaptcha) {
+                    refreshCaptcha();
+                }
             } else if (error.responseJSON && error.responseJSON.message) {
                 errorMsg = error.responseJSON.message;
             }
@@ -197,6 +254,12 @@ $(document).ready(function() {
             showMessageModal('Login Failed', errorMsg);
             $btn.text(originalText).prop('disabled', false);
             $('#password').val('');
+            
+            if (requireCaptcha) {
+                refreshCaptcha();
+            }
         }
     });
+
+    checkCaptchaStatus();
 });

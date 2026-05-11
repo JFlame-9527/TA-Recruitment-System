@@ -205,6 +205,39 @@ body {
     font-size: 16px;
 }
 
+.captcha-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.captcha-input {
+    flex: 1;
+    max-width: 180px;
+}
+
+.captcha-img {
+    height: 50px;
+    width: 150px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s;
+}
+
+.captcha-img:hover {
+    border-color: rgba(79, 172, 254, 0.8);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+}
+
+.captcha-hint {
+    display: block;
+    margin-top: 5px;
+    color: #a5b4fc;
+    font-size: 12px;
+}
+
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
