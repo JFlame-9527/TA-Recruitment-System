@@ -351,8 +351,153 @@ $(document).ready(function() {
     // Resume file validation
     $('#resume').on('change', function() {
         validateResumeFile(this);
+        
+        // Show/hide extract button based on file selection
+        if (this.files && this.files.length > 0) {
+            $('#extractSkillsBtn').show();
+        } else {
+            $('#extractSkillsBtn').hide();
+        }
+    });
+    
+    // Extract skills from resume
+    $('#extractSkillsBtn').on('click', function() {
+        extractSkillsFromResume();
     });
 });
+
+function extractSkillsFromResume() {
+    const fileInput = $('#resume')[0];
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showFormError('Please select a resume file first');
+        return;
+    }
+    
+    // Validate file type
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        showFormError('Only PDF files are allowed');
+        return;
+    }
+    
+    // Validate file size (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+        showFormError('File size must be less than 10MB');
+        return;
+    }
+    
+    // Show loading status
+    $('#extractStatus')
+        .removeClass('alert-danger alert-success')
+        .addClass('alert-info')
+        .text('Extracting skills from resume... Please wait.')
+        .show();
+    
+    $('#extractSkillsBtn').prop('disabled', true).text('Extracting...');
+    
+    // Create FormData and send via AJAX
+    const formData = new FormData();
+    formData.append('action', 'extractSkills');
+    formData.append('resume', file);
+    
+    $.ajax({
+        url: 'taServlet',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response.success && response.data && response.data.skills) {
+                const skills = response.data.skills;
+                
+                if (skills.length === 0) {
+                    showExtractStatus('No skills found in the resume', 'warning');
+                } else {
+                    // Add extracted skills to the list
+                    let addedCount = 0;
+                    let duplicateCount = 0;
+                    
+                    skills.forEach(function(skill) {
+                        if (addSkillIfNotExists(skill)) {
+                            addedCount++;
+                        } else {
+                            duplicateCount++;
+                        }
+                    });
+                    
+                    updateSkillsHiddenFields();
+                    
+                    const message = `Successfully extracted ${addedCount} skill(s)` + 
+                                   (duplicateCount > 0 ? ` (${duplicateCount} duplicates skipped)` : '');
+                    showExtractStatus(message, 'success');
+                }
+            } else {
+                showExtractStatus(response.message || 'Failed to extract skills', 'error');
+            }
+            
+            $('#extractSkillsBtn').prop('disabled', false).text('Extract Skills');
+        },
+        error: function(xhr) {
+            const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Network error occurred';
+            showExtractStatus(errorMsg, 'error');
+            $('#extractSkillsBtn').prop('disabled', false).text('Extract Skills');
+        }
+    });
+}
+
+function addSkillIfNotExists(skill) {
+    if (!skill || skill.trim() === '') {
+        return false;
+    }
+    
+    skill = skill.trim();
+    
+    // Check for duplicates (case-insensitive)
+    let exists = false;
+    $('.skill-editable-tag .skill-text').each(function() {
+        if ($(this).text().toLowerCase() === skill.toLowerCase()) {
+            exists = true;
+            return false; // break loop
+        }
+    });
+    
+    if (exists) {
+        return false;
+    }
+    
+    addSkillTag(skill);
+    return true;
+}
+
+function showExtractStatus(message, type) {
+    const $status = $('#extractStatus');
+    $status.removeClass('alert-info alert-success alert-danger alert-warning');
+    
+    switch(type) {
+        case 'success':
+            $status.addClass('alert-success');
+            break;
+        case 'error':
+            $status.addClass('alert-danger');
+            break;
+        case 'warning':
+            $status.addClass('alert-warning');
+            break;
+        default:
+            $status.addClass('alert-info');
+    }
+    
+    $status.text(message).show();
+    
+    // Auto-hide after 5 seconds for success messages
+    if (type === 'success') {
+        setTimeout(function() {
+            $status.fadeOut(300);
+        }, 5000);
+    }
+}
 
 function openProfileModal(isEdit) {
     window.isEditMode = isEdit;
