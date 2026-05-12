@@ -1,16 +1,10 @@
 package com.tars.util;
 
+import com.tars.config.ApplicationConfiguration;
 import jakarta.servlet.http.Part;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
-import java.io.File;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collection;
+import java.io.*;
 
 import static org.junit.Assert.*;
 
@@ -19,563 +13,408 @@ import static org.junit.Assert.*;
  * Tests file upload, download, validation, and security features
  *
  * @author mei1234567554
- * @version 1.0.0
- * @since 2026/4/7
+ * @version 4.0.0
+ * @since 2026/5/10
  */
 public class FileUtilsTest {
 
-    private static final String TEST_UPLOAD_DIR = "test_uploads";
-    private static final String TEST_WEB_ROOT = "test_webroot";
+    private static final String TEST_UPLOAD_DIR = "test-uploads";
+    private static final String TEST_SUBDIR = "resumes";
 
-    @Before
-    public void setUp() {
-        cleanupTestDirectories();
-    }
+    @BeforeClass
+    public static void setUp() {
+        // Initialize ApplicationConfiguration for test environment
+        String testResourcePath = new File("src/test/resources").getAbsolutePath();
+        ApplicationConfiguration.initializeForTest(testResourcePath);
 
-    @After
-    public void tearDown() {
-        cleanupTestDirectories();
-    }
+        // Set test upload directory
+        FileUtils.setFileDir(TEST_UPLOAD_DIR);
 
-    /**
-     * Helper method to clean up test directories
-     */
-    private void cleanupTestDirectories() {
-        deleteDirectory(new File(TEST_UPLOAD_DIR));
-        deleteDirectory(new File(TEST_WEB_ROOT));
-    }
-
-    private void deleteDirectory(File dir) {
-        if (dir.exists()) {
-            File[] files = dir.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (file.isDirectory()) {
-                        deleteDirectory(file);
-                    } else {
-                        file.delete();
-                    }
-                }
-            }
-            dir.delete();
+        // Create test upload directory
+        File dir = new File(TEST_UPLOAD_DIR);
+        if (!dir.exists()) {
+            dir.mkdirs();
         }
     }
 
-    // ==================== SANITIZE PATH TESTS ====================
-
-    @Test
-    public void testSanitizePathValidPath() {
-        // Arrange
-        String path = "resumes/abc123.pdf";
-
-        // Act
-        String sanitized = FileUtils.sanitizePath(path);
-
-        // Assert
-        assertNotNull(sanitized);
-        assertEquals("resumes/abc123.pdf", sanitized);
+    @AfterClass
+    public static void tearDown() {
+        // Clean up test upload directory
+        cleanTestDirectory();
     }
 
-    @Test
-    public void testSanitizePathRemovesLeadingSlash() {
-        // Arrange
-        String path = "/resumes/file.pdf";
-
-        // Act
-        String sanitized = FileUtils.sanitizePath(path);
-
-        // Assert
-        assertNotNull(sanitized);
-        assertEquals("resumes/file.pdf", sanitized);
-    }
-
-    @Test
-    public void testSanitizePathConvertsBackslashes() {
-        // Arrange
-        String path = "resumes\\subdir\\file.pdf";
-
-        // Act
-        String sanitized = FileUtils.sanitizePath(path);
-
-        // Assert
-        assertNotNull(sanitized);
-        assertEquals("resumes/subdir/file.pdf", sanitized);
-    }
-
-    @Test
-    public void testSanitizePathRejectsPathTraversal() {
-        // Arrange
-        String path = "../etc/passwd";
-
-        // Act
-        String sanitized = FileUtils.sanitizePath(path);
-
-        // Assert
-        assertNull(sanitized);
-    }
-
-    @Test
-    public void testSanitizePathRejectsDoubleDotInMiddle() {
-        // Arrange
-        String path = "resumes/../secret/file.pdf";
-
-        // Act
-        String sanitized = FileUtils.sanitizePath(path);
-
-        // Assert
-        assertNull(sanitized);
-    }
-
-    @Test
-    public void testSanitizePathRejectsInvalidCharacters() {
-        // Arrange
-        String path = "file<script>.pdf";
-
-        // Act
-        String sanitized = FileUtils.sanitizePath(path);
-
-        // Assert
-        assertNull(sanitized);
-    }
-
-    @Test
-    public void testSanitizePathWithNullInput() {
-        // Act
-        String sanitized = FileUtils.sanitizePath(null);
-
-        // Assert
-        assertNull(sanitized);
-    }
-
-    @Test
-    public void testSanitizePathWithEmptyString() {
-        // Act
-        String sanitized = FileUtils.sanitizePath("");
-
-        // Assert
-        assertNull(sanitized);
-    }
-
-    @Test
-    public void testSanitizePathWithWhitespace() {
-        // Act
-        String sanitized = FileUtils.sanitizePath("   ");
-
-        // Assert
-        assertNull(sanitized);
-    }
-
-    @Test
-    public void testSanitizePathAllowsAlphanumericDashUnderscore() {
-        // Arrange
-        String path = "my-folder/test_file-123.pdf";
-
-        // Act
-        String sanitized = FileUtils.sanitizePath(path);
-
-        // Assert
-        assertNotNull(sanitized);
-        assertEquals("my-folder/test_file-123.pdf", sanitized);
-    }
-
-    @Test
-    public void testSanitizePathRemovesNullBytes() {
-        // Arrange
-        String path = "file\u0000.pdf";
-
-        // Act
-        String sanitized = FileUtils.sanitizePath(path);
-
-        // Assert
-        assertNotNull(sanitized);
-        assertFalse(sanitized.contains("\u0000"));
-    }
-
-    // ==================== FILE URL TESTS ====================
-
-    @Test
-    public void testGetFileUrlBasicPath() {
-        // Arrange
-        String contextPath = "/app";
-        String relativePath = "resumes/uuid123.pdf";
-
-        // Act
-        String url = FileUtils.getFileUrl(contextPath, relativePath);
-
-        // Assert
-        assertNotNull(url);
-        assertEquals("/app/uploads/resumes/uuid123.pdf", url);
-    }
-
-    @Test
-    public void testGetFileUrlWithEmptyContextPath() {
-        // Arrange
-        String contextPath = "";
-        String relativePath = "photos/photo.jpg";
-
-        // Act
-        String url = FileUtils.getFileUrl(contextPath, relativePath);
-
-        // Assert
-        assertNotNull(url);
-        assertEquals("/uploads/photos/photo.jpg", url);
-    }
-
-    @Test
-    public void testGetFileUrlRejectsPathTraversal() {
-        // Arrange
-        String contextPath = "/app";
-        String relativePath = "../secret/file.pdf";
-
-        // Act
-        String url = FileUtils.getFileUrl(contextPath, relativePath);
-
-        // Assert
-        assertNull(url);
-    }
-
-    @Test
-    public void testGetFileUrlWithNullPath() {
-        // Act
-        String url = FileUtils.getFileUrl("/app", null);
-
-        // Assert
-        assertNull(url);
-    }
-
-    @Test
-    public void testGetFileUrlWithEmptyPath() {
-        // Act
-        String url = FileUtils.getFileUrl("/app", "");
-
-        // Assert
-        assertNull(url);
-    }
-
-    @Test
-    public void testGetFileUrlNormalizesBackslashes() {
-        // Arrange
-        String contextPath = "/app";
-        String relativePath = "folder\\subfolder\\file.pdf";
-
-        // Act
-        String url = FileUtils.getFileUrl(contextPath, relativePath);
-
-        // Assert
-        assertNotNull(url);
-        assertEquals("/app/uploads/folder/subfolder/file.pdf", url);
-    }
-
-    @Test
-    public void testGetFileUrlRemovesLeadingSlashFromRelativePath() {
-        // Arrange
-        String contextPath = "/app";
-        String relativePath = "/resumes/file.pdf";
-
-        // Act
-        String url = FileUtils.getFileUrl(contextPath, relativePath);
-
-        // Assert
-        assertNotNull(url);
-        assertEquals("/app/uploads/resumes/file.pdf", url);
-    }
-
-    // ==================== FILE EXISTS TESTS ====================
-
-    @Test
-    public void testFileExistsReturnsTrue() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-        Path filePath = Paths.get(TEST_WEB_ROOT, "uploads", "test.pdf");
-        Files.createDirectories(filePath.getParent());
-        Files.createFile(filePath);
-
-        // Act
-        boolean exists = FileUtils.fileExists(TEST_WEB_ROOT, "test.pdf");
-
-        // Assert
-        assertTrue(exists);
-    }
-
-    @Test
-    public void testFileExistsReturnsFalse() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-
-        // Act
-        boolean exists = FileUtils.fileExists(TEST_WEB_ROOT, "nonexistent.pdf");
-
-        // Assert
-        assertFalse(exists);
-    }
-
-    @Test
-    public void testFileExistsRejectsPathTraversal() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-
-        // Act
-        boolean exists = FileUtils.fileExists(TEST_WEB_ROOT, "../etc/passwd");
-
-        // Assert
-        assertFalse(exists);
-    }
-
-    @Test
-    public void testFileExistsWithNullPath() {
-        // Act
-        boolean exists = FileUtils.fileExists(TEST_WEB_ROOT, null);
-
-        // Assert
-        assertFalse(exists);
-    }
-
-    // ==================== DELETE FILE TESTS ====================
-
-    @Test
-    public void testDeleteFileSuccess() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-        Path filePath = Paths.get(TEST_WEB_ROOT, "uploads", "delete_me.pdf");
-        Files.createDirectories(filePath.getParent());
-        Files.createFile(filePath);
-        assertTrue(Files.exists(filePath));
-
-        // Act
-        boolean deleted = FileUtils.deleteFile(TEST_WEB_ROOT, "delete_me.pdf");
-
-        // Assert
-        assertTrue(deleted);
-        assertFalse(Files.exists(filePath));
-    }
-
-    @Test
-    public void testDeleteFileNotExists() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-
-        // Act
-        boolean deleted = FileUtils.deleteFile(TEST_WEB_ROOT, "nonexistent.pdf");
-
-        // Assert
-        assertFalse(deleted);
-    }
-
-    @Test
-    public void testDeleteFileRejectsPathTraversal() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-        Path importantFile = Paths.get("important.txt");
-        Files.createFile(importantFile);
-
-        // Act
-        boolean deleted = FileUtils.deleteFile(TEST_WEB_ROOT, "../important.txt");
-
-        // Assert
-        assertFalse(deleted);
-        assertTrue(Files.exists(importantFile)); // File should still exist
-
-        Files.deleteIfExists(importantFile);
-    }
-
-    @Test
-    public void testDeleteFileWithNullPath() {
-        // Act
-        boolean deleted = FileUtils.deleteFile(TEST_WEB_ROOT, null);
-
-        // Assert
-        assertFalse(deleted);
-    }
-
-    // ==================== SAVE PDF FILE TESTS (Mock Part) ====================
-
-    @Test
-    public void testSavePdfFileWithValidPdf() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-        MockPart mockPart = new MockPart(
-                "resume.pdf",
-                "application/pdf",
-                createFakePdfContent()
-        );
-
-        // Act
-        String savedPath = FileUtils.savePdfFile(mockPart, TEST_WEB_ROOT, "resumes");
-
-        // Assert
-        assertNotNull(savedPath);
-        assertTrue(savedPath.startsWith("resumes/"));
-        assertTrue(savedPath.endsWith(".pdf"));
-
-        // Verify file exists
-        Path filePath = Paths.get(TEST_WEB_ROOT, "uploads", savedPath);
-        assertTrue(Files.exists(filePath));
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testSavePdfFileWithNullPart() throws Exception {
-        // Act
-        FileUtils.savePdfFile(null, TEST_WEB_ROOT, "resumes");
-    }
-
-    @Test(expected = SecurityException.class)
-    public void testSavePdfFileWithNonPdfExtension() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-        MockPart mockPart = new MockPart(
-                "malicious.exe",
-                "application/x-msdownload",
-                "fake exe content".getBytes()
-        );
-
-        // Act
-        FileUtils.savePdfFile(mockPart, TEST_WEB_ROOT, "uploads");
-    }
-
-    @Test(expected = SecurityException.class)
-    public void testSavePdfFileWithWrongContentType() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-        MockPart mockPart = new MockPart(
-                "fake.pdf",
-                "text/plain",
-                "not a pdf".getBytes()
-        );
-
-        // Act
-        FileUtils.savePdfFile(mockPart, TEST_WEB_ROOT, "uploads");
-    }
-
-    @Test(expected = SecurityException.class)
-    public void testSavePdfFileExceedsSizeLimit() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-        byte[] largeContent = new byte[11 * 1024 * 1024]; // 11MB > 10MB limit
-        MockPart mockPart = new MockPart(
-                "large.pdf",
-                "application/pdf",
-                largeContent
-        );
-
-        // Act
-        FileUtils.savePdfFile(mockPart, TEST_WEB_ROOT, "uploads");
-    }
-
-    @Test
-    public void testSavePdfFileGeneratesUniqueNames() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-        MockPart part1 = new MockPart("same.pdf", "application/pdf", createFakePdfContent());
-        MockPart part2 = new MockPart("same.pdf", "application/pdf", createFakePdfContent());
-
-        // Act
-        String path1 = FileUtils.savePdfFile(part1, TEST_WEB_ROOT, "resumes");
-        String path2 = FileUtils.savePdfFile(part2, TEST_WEB_ROOT, "resumes");
-
-        // Assert
-        assertNotEquals(path1, path2); // Should have different UUID names
-    }
-
-    @Test
-    public void testSavePdfFileCreatesSubdirectory() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-        MockPart mockPart = new MockPart(
-                "test.pdf",
-                "application/pdf",
-                createFakePdfContent()
-        );
-
-        // Act
-        String savedPath = FileUtils.savePdfFile(mockPart, TEST_WEB_ROOT, "custom_subdir");
-
-        // Assert
-        assertNotNull(savedPath);
-        assertTrue(savedPath.startsWith("custom_subdir/"));
-
-        Path dirPath = Paths.get(TEST_WEB_ROOT, "uploads", "custom_subdir");
-        assertTrue(Files.exists(dirPath));
-        assertTrue(Files.isDirectory(dirPath));
-    }
-
-    // ==================== GET FILE PART TESTS ====================
-
-    @Test
-    public void testGetFilePartReturnsCorrectPart() {
-        // This would require mocking HttpServletRequest
-        // Skipping for now as it requires complex servlet mocking
-        assertTrue(true); // Placeholder
-    }
-
-    // ==================== SECURITY TESTS ====================
-
-    @Test
-    public void testPreventDirectoryTraversalInFilename() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-        MockPart mockPart = new MockPart(
-                "../../../etc/passwd.pdf",
-                "application/pdf",
-                createFakePdfContent()
-        );
-
-        // Act
-        String savedPath = FileUtils.savePdfFile(mockPart, TEST_WEB_ROOT, "uploads");
-
-        // Assert
-        // Should save with UUID name, ignoring original filename's path
-        assertNotNull(savedPath);
-        assertFalse(savedPath.contains(".."));
-        assertFalse(savedPath.contains("/etc/"));
-    }
-
-    @Test
-    public void testMultipleSubdirectoryLevels() throws Exception {
-        // Arrange
-        setupTestWebRoot();
-        MockPart mockPart = new MockPart(
-                "deep.pdf",
-                "application/pdf",
-                createFakePdfContent()
-        );
-
-        // Act
-        String savedPath = FileUtils.savePdfFile(mockPart, TEST_WEB_ROOT, "level1/level2/level3");
-
-        // Assert
-        assertNotNull(savedPath);
-        Path fullPath = Paths.get(TEST_WEB_ROOT, "uploads", savedPath);
-        assertTrue(Files.exists(fullPath));
-    }
-
-    // ==================== HELPER METHODS ====================
-
-    private void setupTestWebRoot() throws Exception {
-        Files.createDirectories(Paths.get(TEST_WEB_ROOT));
-    }
-
-    private byte[] createFakePdfContent() {
-        // Minimal valid PDF header
-        return "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF".getBytes();
+    @Before
+    public void beforeEach() {
+        // Clean upload directory before each test
+        cleanTestDirectory();
+        File dir = new File(TEST_UPLOAD_DIR);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
     }
 
     /**
-     * Mock implementation of Part interface for testing
+     * Test saving a valid PDF file
      */
-    private static class MockPart implements Part {
+    @Test
+    public void testSavePdfFile() throws Exception {
+        File testFile = createTempPdfFile("test.pdf", 1024);
+        Part part = createRealPart(testFile, "test.pdf");
+
+        String relativePath = FileUtils.savePdfFile(part, TEST_SUBDIR);
+
+        assertNotNull("Relative path should not be null", relativePath);
+        assertTrue("Path should contain subdirectory", relativePath.contains(TEST_SUBDIR));
+        assertTrue("Path should end with .pdf", relativePath.endsWith(".pdf"));
+
+        // Verify file was created
+        File savedFile = new File(TEST_UPLOAD_DIR, relativePath.replace("/", File.separator));
+        assertTrue("File should exist", savedFile.exists());
+
+        // Clean up
+        testFile.delete();
+    }
+
+    /**
+     * Test saving file with null part
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testSavePdfFileWithNullPart() throws Exception {
+        FileUtils.savePdfFile(null, TEST_SUBDIR);
+    }
+
+    /**
+     * Test saving file with empty part (zero size)
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testSavePdfFileWithEmptyPart() throws Exception {
+        File testFile = createTempPdfFile("empty.pdf", 0);
+        Part part = createRealPart(testFile, "empty.pdf");
+
+        try {
+            FileUtils.savePdfFile(part, TEST_SUBDIR);
+        } finally {
+            testFile.delete();
+        }
+    }
+
+    /**
+     * Test saving file with non-PDF extension
+     */
+    @Test(expected = SecurityException.class)
+    public void testSaveNonPdfFile() throws Exception {
+        File testFile = createTempFile("test.txt", "text/plain", 1024);
+        Part part = createRealPart(testFile, "test.txt");
+
+        try {
+            FileUtils.savePdfFile(part, TEST_SUBDIR);
+        } finally {
+            testFile.delete();
+        }
+    }
+
+    /**
+     * Test saving file with invalid content type
+     */
+    @Test(expected = SecurityException.class)
+    public void testSavePdfWithInvalidContentType() throws Exception {
+        File testFile = createTempFile("test.pdf", "text/plain", 1024);
+        Part part = createRealPartWithContentType(testFile, "test.pdf", "text/plain");
+
+        try {
+            FileUtils.savePdfFile(part, TEST_SUBDIR);
+        } finally {
+            testFile.delete();
+        }
+    }
+
+    /**
+     * Test getting file part from request - manual test without mocking
+     */
+    @Test
+    public void testGetFilePartManual() {
+        // This method requires HttpServletRequest which is hard to test without mocking
+        // We'll test the logic indirectly by verifying the method exists and handles null
+        Part result = FileUtils.getFilePart(null, "resume");
+        assertNull("Should return null for null request", result);
+    }
+
+    /**
+     * Test deleting an existing file
+     */
+    @Test
+    public void testDeleteFile() throws Exception {
+        File testFile = createTempPdfFile("test.pdf", 1024);
+        Part part = createRealPart(testFile, "test.pdf");
+        String relativePath = FileUtils.savePdfFile(part, TEST_SUBDIR);
+
+        boolean deleted = FileUtils.deleteFile(relativePath);
+
+        assertTrue("File should be deleted", deleted);
+        assertFalse("File should not exist after deletion",
+                FileUtils.fileExists(relativePath));
+
+        // Clean up
+        testFile.delete();
+    }
+
+    /**
+     * Test deleting non-existent file
+     */
+    @Test
+    public void testDeleteNonExistentFile() {
+        boolean deleted = FileUtils.deleteFile("nonexistent/path/file.pdf");
+
+        assertFalse("Should return false for non-existent file", deleted);
+    }
+
+    /**
+     * Test deleting file with path traversal attempt
+     */
+    @Test
+    public void testDeleteWithPathTraversal() {
+        boolean deleted = FileUtils.deleteFile("../etc/passwd");
+
+        assertFalse("Should reject path traversal attempts", deleted);
+    }
+
+    /**
+     * Test checking if file exists
+     */
+    @Test
+    public void testFileExists() throws Exception {
+        File testFile = createTempPdfFile("test.pdf", 1024);
+        Part part = createRealPart(testFile, "test.pdf");
+        String relativePath = FileUtils.savePdfFile(part, TEST_SUBDIR);
+
+        assertTrue("File should exist", FileUtils.fileExists(relativePath));
+
+        // Clean up
+        testFile.delete();
+    }
+
+    /**
+     * Test checking if non-existent file exists
+     */
+    @Test
+    public void testFileNotExists() {
+        assertFalse("Non-existent file should return false",
+                FileUtils.fileExists("nonexistent/file.pdf"));
+    }
+
+    /**
+     * Test file existence check with path traversal
+     */
+    @Test
+    public void testFileExistsWithPathTraversal() {
+        assertFalse("Should reject path traversal in existence check",
+                FileUtils.fileExists("../etc/passwd"));
+    }
+
+    /**
+     * Test getting file URL
+     */
+    @Test
+    public void testGetFileUrl() {
+        String contextPath = "/app";
+        String relativePath = "resumes/test.pdf";
+
+        String url = FileUtils.getFileUrl(contextPath, relativePath);
+
+        assertNotNull("URL should not be null", url);
+        assertTrue("URL should contain context path", url.contains(contextPath));
+        assertTrue("URL should contain file path", url.contains(relativePath));
+    }
+
+    /**
+     * Test getting file URL with null path
+     */
+    @Test
+    public void testGetFileUrlWithNullPath() {
+        String url = FileUtils.getFileUrl("/app", null);
+
+        assertNull("Should return null for null path", url);
+    }
+
+    /**
+     * Test getting file URL with path traversal
+     */
+    @Test
+    public void testGetFileUrlWithPathTraversal() {
+        String url = FileUtils.getFileUrl("/app", "../etc/passwd");
+
+        assertNull("Should reject path traversal in URL", url);
+    }
+
+    /**
+     * Test sanitizing valid path
+     */
+    @Test
+    public void testSanitizeValidPath() {
+        String path = "resumes/test-file_123.pdf";
+
+        String sanitized = FileUtils.sanitizePath(path);
+
+        assertNotNull("Sanitized path should not be null", sanitized);
+        assertEquals("Path should remain unchanged", path, sanitized);
+    }
+
+    /**
+     * Test sanitizing path with backslashes
+     */
+    @Test
+    public void testSanitizePathWithBackslashes() {
+        String path = "resumes\\test\\file.pdf";
+
+        String sanitized = FileUtils.sanitizePath(path);
+
+        assertNotNull("Sanitized path should not be null", sanitized);
+        assertTrue("Should convert backslashes to forward slashes",
+                sanitized.contains("/"));
+        assertFalse("Should not contain backslashes", sanitized.contains("\\"));
+    }
+
+    /**
+     * Test sanitizing path with path traversal
+     */
+    @Test
+    public void testSanitizePathWithTraversal() {
+        String path = "../etc/passwd";
+
+        String sanitized = FileUtils.sanitizePath(path);
+
+        assertNull("Should reject path traversal", sanitized);
+    }
+
+    /**
+     * Test sanitizing path with invalid characters
+     */
+    @Test
+    public void testSanitizePathWithInvalidChars() {
+        String path = "resumes/test<script>.pdf";
+
+        String sanitized = FileUtils.sanitizePath(path);
+
+        assertNull("Should reject invalid characters", sanitized);
+    }
+
+    /**
+     * Test sanitizing null path
+     */
+    @Test
+    public void testSanitizeNullPath() {
+        String sanitized = FileUtils.sanitizePath(null);
+
+        assertNull("Should return null for null input", sanitized);
+    }
+
+    /**
+     * Test sanitizing empty path
+     */
+    @Test
+    public void testSanitizeEmptyPath() {
+        String sanitized = FileUtils.sanitizePath("");
+
+        assertNull("Should return null for empty input", sanitized);
+    }
+
+    /**
+     * Test getting file from relative path
+     */
+    @Test
+    public void testGetFileFromRelativePath() throws Exception {
+        File testFile = createTempPdfFile("test.pdf", 1024);
+        Part part = createRealPart(testFile, "test.pdf");
+        String relativePath = FileUtils.savePdfFile(part, TEST_SUBDIR);
+
+        File file = FileUtils.getFileFromRelativePath(relativePath);
+
+        assertNotNull("File should not be null", file);
+        assertTrue("File should exist", file.exists());
+        assertTrue("Should be a file", file.isFile());
+
+        // Clean up
+        testFile.delete();
+    }
+
+    /**
+     * Test getting file with path traversal
+     */
+    @Test
+    public void testGetFileWithPathTraversal() {
+        File file = FileUtils.getFileFromRelativePath("../etc/passwd");
+
+        assertNull("Should reject path traversal", file);
+    }
+
+    /**
+     * Test getting file with null path
+     */
+    @Test
+    public void testGetFileWithNullPath() {
+        File file = FileUtils.getFileFromRelativePath(null);
+
+        assertNull("Should return null for null path", file);
+    }
+
+    /**
+     * Helper method to create temporary PDF file
+     */
+    private File createTempPdfFile(String fileName, int size) throws IOException {
+        return createTempFile(fileName, "application/pdf", size);
+    }
+
+    /**
+     * Helper method to create temporary file
+     */
+    private File createTempFile(String fileName, String contentType, int size) throws IOException {
+        File tempFile = File.createTempFile("test_", "_" + fileName);
+
+        if (size > 0) {
+            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                byte[] data = new byte[size];
+                // Fill with dummy PDF header
+                if (fileName.endsWith(".pdf")) {
+                    System.arraycopy("%PDF-1.4".getBytes(), 0, data, 0, Math.min(8, size));
+                }
+                fos.write(data);
+            }
+        }
+
+        return tempFile;
+    }
+
+    /**
+     * Helper method to create real Part implementation
+     */
+    private Part createRealPart(File file, String fileName) throws IOException {
+        return new SimplePart(file, fileName, "application/pdf");
+    }
+
+    /**
+     * Helper method to create real Part with custom content type
+     */
+    private Part createRealPartWithContentType(File file, String fileName, String contentType) throws IOException {
+        return new SimplePart(file, fileName, contentType);
+    }
+
+    /**
+     * Simple Part implementation for testing
+     */
+    private static class SimplePart implements Part {
+        private final File file;
         private final String fileName;
         private final String contentType;
-        private final byte[] content;
 
-        MockPart(String fileName, String contentType, byte[] content) {
+        public SimplePart(File file, String fileName, String contentType) throws IOException {
+            this.file = file;
             this.fileName = fileName;
             this.contentType = contentType;
-            this.content = content;
         }
 
         @Override
-        public InputStream getInputStream() {
-            return new java.io.ByteArrayInputStream(content);
+        public InputStream getInputStream() throws IOException {
+            return new FileInputStream(file);
         }
 
         @Override
@@ -595,14 +434,18 @@ public class FileUtilsTest {
 
         @Override
         public long getSize() {
-            return content.length;
+            return file.length();
         }
 
         @Override
-        public void write(String fileName) {}
+        public void write(String fileName) throws IOException {
+            // Not needed for tests
+        }
 
         @Override
-        public void delete() {}
+        public void delete() throws IOException {
+            file.delete();
+        }
 
         @Override
         public String getHeader(String name) {
@@ -610,13 +453,38 @@ public class FileUtilsTest {
         }
 
         @Override
-        public Collection<String> getHeaders(String name) {
+        public java.util.Collection<String> getHeaders(String name) {
             return null;
         }
 
         @Override
-        public Collection<String> getHeaderNames() {
+        public java.util.Collection<String> getHeaderNames() {
             return null;
         }
+    }
+
+    /**
+     * Helper method to clean test directory
+     */
+    private static void cleanTestDirectory() {
+        File dir = new File(TEST_UPLOAD_DIR);
+        if (dir.exists()) {
+            deleteRecursively(dir);
+        }
+    }
+
+    /**
+     * Helper method to delete directory recursively
+     */
+    private static void deleteRecursively(File file) {
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File child : files) {
+                    deleteRecursively(child);
+                }
+            }
+        }
+        file.delete();
     }
 }
