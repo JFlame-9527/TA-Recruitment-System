@@ -1,6 +1,6 @@
 <%--
   @author: QiheSun
-  @Since: 2026/5/5
+  @Since: 2026/5/12
 --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
@@ -78,8 +78,12 @@
                                 <span>${profile.age}</span>
                             </div>
                             <div class="profile-item">
-                                <label>Grade</label>
-                                <span>${profile.grade}</span>
+                                <label>Degree</label>
+                                <span>${profile.degree}</span>
+                            </div>
+                            <div class="profile-item">
+                                <label>Year</label>
+                                <span>${profile.year}</span>
                             </div>
                             <div class="profile-item">
                                 <label>Email</label>
@@ -191,8 +195,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="grade">Grade</label>
-                    <input type="text" id="grade" name="grade" class="form-control" placeholder="e.g., Year 3">
+                    <label for="degree">Degree</label>
+                    <select id="degree" name="degree" class="form-control">
+                        <option value="">Select Degree</option>
+                        <option value="BACHELOR">Bachelor</option>
+                        <option value="MASTER">Master</option>
+                        <option value="PHD">PhD</option>
+                    </select>
                 </div>
             </div>
 
@@ -210,13 +219,25 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" class="form-control" placeholder="your.email@example.com">
+                    <label for="year">Year of Study</label>
+                    <input type="number" id="year" name="year" class="form-control" min="1" max="10" placeholder="e.g., 3">
                 </div>
 
                 <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="your.email@example.com">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
                     <label for="phone">Phone</label>
                     <input type="tel" id="phone" name="phone" class="form-control" placeholder="+44 123 456 7890">
+                </div>
+
+                <div class="form-group" style="visibility: hidden;">
+                    <label>&nbsp;</label>
+                    <div></div>
                 </div>
             </div>
 
@@ -235,6 +256,9 @@
             <div class="form-group">
                 <label for="resume">Resume (PDF, Max 10MB) <span class="required" id="resumeRequired">*</span></label>
                 <input type="file" id="resume" name="resume" accept=".pdf,application/pdf" class="form-control">
+                <button type="button" id="extractSkillsBtn" class="btn btn-secondary" style="margin-top: 10px; display: none;">
+                    Extract Skills
+                </button>
                 <div id="currentResume" style="display: none; margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 6px;">
                     <span>Current: </span>
                     <span id="currentResumeName"></span>
@@ -242,6 +266,8 @@
                 </div>
                 <small class="form-hint" id="resumeHint">Only PDF files are accepted</small>
             </div>
+
+            <div id="extractStatus" class="alert alert-info" style="display: none;"></div>
 
             <div id="formError" class="alert alert-danger" style="display: none;"></div>
 

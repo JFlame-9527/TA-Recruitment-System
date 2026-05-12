@@ -2,6 +2,7 @@ package com.tars.service;
 
 import com.tars.ai.PortraitGenerator;
 import com.tars.ai.PortraitMatcher;
+import com.tars.ai.SkillExtractor;
 import com.tars.entity.bean.Application;
 import com.tars.entity.bean.Portrait;
 import com.tars.entity.bean.Position;
@@ -30,8 +31,8 @@ import java.util.stream.Stream;
 
 /**
  * @author QiheSun Xiri04
- * @version 2.0.0
- * @since 2026/3/24
+ * @version 4.0.0
+ * @since 2026/5/12
  */
 @Slf4j
 public class TAService {
@@ -45,6 +46,8 @@ public class TAService {
     private final JsonRepository<Portrait> portraitRepo = new JsonRepository<>(Portrait.class);
 
     private final PortraitGenerator portraitGenerator = new PortraitGenerator();
+
+    private final SkillExtractor skillExtractor = new SkillExtractor();
 
     private final int applyPageSize = 9;
 
@@ -571,6 +574,30 @@ public class TAService {
         } catch (IOException e) {
             log.error("verify profile exists failed, userId: {}, error message: {}", userId, e.getMessage());
             return false;
+        }
+    }
+
+    public List<String> extractSkills(Part resumePart) {
+        if (resumePart == null || resumePart.getSize() == 0) {
+            log.warn("No resume file provided for skill extraction");
+            throw new IllegalArgumentException("No resume file provided");
+        }
+
+        String fileName = resumePart.getSubmittedFileName();
+        if (fileName == null || !fileName.toLowerCase().endsWith(".pdf")) {
+            log.warn("Invalid file type for skill extraction: {}", fileName);
+            throw new IllegalArgumentException("Only PDF files are supported");
+        }
+
+        log.info("Starting skill extraction from resume: {}", fileName);
+
+        try {
+            List<String> skills = skillExtractor.extract(resumePart);
+            log.info("Successfully extracted {} skills from {}", skills.size(), fileName);
+            return skills;
+        } catch (Exception e) {
+            log.error("Failed to extract skills from resume: {}", fileName, e);
+            throw new RuntimeException("Failed to extract skills: " + e.getMessage(), e);
         }
     }
 }
