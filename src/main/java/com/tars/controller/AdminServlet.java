@@ -2,7 +2,7 @@ package com.tars.controller;
 
 import com.tars.entity.bean.MOProfile;
 import com.tars.entity.bean.User;
-import com.tars.entity.dto.QueryCondition;
+import com.tars.entity.QueryCondition;
 import com.tars.entity.dto.admin.MOProDTO;
 import com.tars.entity.dto.admin.TAProDTO;
 import com.tars.entity.dto.admin.UserDetailDTO;

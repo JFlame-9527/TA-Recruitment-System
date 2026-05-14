@@ -1,4 +1,4 @@
-package com.tars.entity.dto;
+package com.tars.entity;
 
 import lombok.Data;
 

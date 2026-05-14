@@ -2,7 +2,7 @@ package com.tars.service;
 
 import com.tars.config.ApplicationConfiguration;
 import com.tars.entity.bean.*;
-import com.tars.entity.dto.QueryCondition;
+import com.tars.entity.QueryCondition;
 import com.tars.entity.dto.mo.ApplicationDTO;
 import com.tars.entity.dto.mo.PosBriefDTO;
 import com.tars.entity.dto.mo.PosDetailDTO;

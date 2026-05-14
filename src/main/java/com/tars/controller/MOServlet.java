@@ -1,7 +1,7 @@
 package com.tars.controller;
 
 import com.tars.entity.bean.Position;
-import com.tars.entity.dto.QueryCondition;
+import com.tars.entity.QueryCondition;
 import com.tars.entity.dto.mo.ApplicationDTO;
 import com.tars.entity.dto.mo.PosBriefDTO;
 import com.tars.entity.dto.mo.PosDetailDTO;

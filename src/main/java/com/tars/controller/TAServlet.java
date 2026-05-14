@@ -2,7 +2,7 @@ package com.tars.controller;
 
 import com.tars.entity.bean.Application;
 import com.tars.entity.bean.TAProfile;
-import com.tars.entity.dto.QueryCondition;
+import com.tars.entity.QueryCondition;
 import com.tars.entity.dto.ta.AppPosDTO;
 import com.tars.entity.dto.ta.PosBriefDTO;
 import com.tars.entity.dto.ta.PosDetailDTO;
