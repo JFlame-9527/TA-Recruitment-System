@@ -131,6 +131,17 @@
             </testResource>
         </testResources>
 
+        <!-- Exclude config files from default resource processing -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>config.json</exclude>
+                    <exclude>qwen_config.json</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
         <plugins>
             <!-- Maven Compiler Plugin -->
             <plugin>
@@ -172,6 +183,17 @@
                         WEB-INF/classes/upload/**,
                         WEB-INF/classes/test-data/**,
                     </packagingExcludes>
+                    <!-- Include config files in WAR root config/ directory -->
+                    <webResources>
+                        <resource>
+                            <directory>src/main/resources</directory>
+                            <targetPath>config</targetPath>
+                            <includes>
+                                <include>config.json</include>
+                                <include>qwen_config.json</include>
+                            </includes>
+                        </resource>
+                    </webResources>
                 </configuration>
             </plugin>
 
