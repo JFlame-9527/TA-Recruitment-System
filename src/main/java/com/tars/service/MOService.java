@@ -49,42 +49,53 @@ public class MOService {
 
     private final int appPageSize = 10;
 
-    public boolean createPosition(Position position) {
+    public boolean postPosition(Position position, String repostId) {
         try {
-
             Portrait portrait = portraitGenerator.generatePortrait(position);
-
             position.setPortraitId(portrait.getId());
 
-            positionRepo.saveEntity(position);
+            if (repostId != null && !repostId.trim().isEmpty()) {
+                // Repost mode: load original position and preserve id and createAt
+                Position originalPosition = positionRepo.getEntityById(repostId);
+                
+                if (originalPosition == null) {
+                    log.error("Original position not found for repost, reposId: {}", repostId);
+                    return false;
+                }
 
+                // Preserve original id and createAt
+                String originalId = originalPosition.getId();
+                Timestamp originalCreateAt = originalPosition.getCreateAt();
+
+                // Update the position with preserved fields
+                position.setId(originalId);
+                position.setCreateAt(originalCreateAt);
+                position.setUpdateAt(Timestamp.valueOf(LocalDateTime.now()));
+
+                // Save the reposted position (update existing record)
+                positionRepo.saveEntity(position);
+                
+                log.info("repost position success, positionId: {}, originalCreateAt: {}", 
+                        originalId, originalCreateAt);
+            } else {
+                // Normal create mode: generate new id and timestamps
+                position.setUpdateAt(Timestamp.valueOf(LocalDateTime.now()));
+                positionRepo.saveEntity(position);
+                
+                log.info("create position success, positionId: {}", position.getId());
+            }
+
+            // Always save/update the portrait
             portraitRepo.saveEntity(portrait);
 
-            log.info("create position success, positionId: {}", position.getId());
         } catch (IOException e) {
-            log.error("create position failed, positionId: {}, error message: {}", position.getId(), e.getMessage());
+            log.error("create/repost position failed, positionId: {}, error message: {}", 
+                    position.getId(), e.getMessage());
             return false;
         }
         return true;
     }
 
-    public boolean updatePosition(Position position) {
-        try {
-            position.setUpdateAt(Timestamp.valueOf(LocalDateTime.now()));
-
-            Portrait portrait = portraitGenerator.generatePortrait(position);
-            position.setPortraitId(portrait.getId());
-
-            positionRepo.saveEntity(position);
-            portraitRepo.saveEntity(portrait);
-
-            log.info("update position success, positionId: {}", position.getId());
-        } catch (IOException e) {
-            log.error("update position failed, positionId: {}, error message: {}", position.getId(), e.getMessage());
-            return false;
-        }
-        return true;
-    }
 
     public List<PosBriefDTO> getPositionList(String userId, int page) {
         if (userId == null || userId.trim().isEmpty()) {
@@ -159,29 +170,6 @@ public class MOService {
         }
     }
 
-    public long getPositionPages(String userId) {
-        if (userId == null || userId.trim().isEmpty()) {
-            log.warn("userId is null or empty");
-            return 0;
-        }
-
-        try {
-            List<Position> positions = positionRepo.loadAllEntities();
-
-            if (positions == null || positions.isEmpty()) {
-                return 0;
-            }
-
-            long positionCount = positions.stream()
-                    .filter(pos -> pos != null && userId.equals(pos.getPostUserId()))
-                    .count();
-
-            return positionCount % posPageSize == 0 ? positionCount / posPageSize : positionCount / posPageSize + 1;
-        } catch (IOException e) {
-            log.error("get position pages failed, userId: {}, error message: {}", userId, e.getMessage());
-            return 0;
-        }
-    }
 
     public long getPositionPages(String userId, QueryCondition condition) {
         if (userId == null || userId.trim().isEmpty()) {
@@ -234,50 +222,6 @@ public class MOService {
         }
     }
 
-    public List<ApplicationDTO> getAppList(String posId, int page) {
-        if (posId == null || posId.trim().isEmpty()) {
-            log.warn("posId is null or empty");
-            return List.of();
-        }
-
-        try {
-            List<Application> applications = applicationRepo.loadAllEntities();
-            List<TAProfile> taProfiles = taProfileRepo.loadAllEntities();
-
-            if (applications == null || applications.isEmpty()) {
-                return List.of();
-            }
-
-            Map<String, TAProfile> profileMap = taProfiles.stream()
-                    .filter(profile -> profile != null && profile.getUserId() != null)
-                    .collect(java.util.stream.Collectors.toMap(
-                            TAProfile::getUserId,
-                            profile -> profile,
-                            (existing, replacement) -> existing
-                    ));
-
-            int pageNum = Math.max(page, 1);
-
-            return applications.stream()
-                    .filter(app -> app != null && posId.equals(app.getPositionId()) && app.getStatus() != 3)
-                    .map(app -> {
-                        TAProfile profile = profileMap.get(app.getUserId());
-                        if (profile == null) {
-                            log.debug("TAProfile not found for userId: {}", app.getUserId());
-                            return null;
-                        }
-                        return AppMapper.INSTANCE.toAppDTO(app, profile);
-                    })
-                    .filter(Objects::nonNull)
-                    .skip((long) (pageNum - 1) * appPageSize)
-                    .limit(appPageSize)
-                    .toList();
-
-        } catch (IOException e) {
-            log.error("get application list failed, posId: {}, error message: {}", posId, e.getMessage());
-            return List.of();
-        }
-    }
 
     public List<ApplicationDTO> getAppList(String posId, QueryCondition condition) {
         if (posId == null || posId.trim().isEmpty()) {
@@ -427,29 +371,6 @@ public class MOService {
         }
     }
 
-    public long getAppPages(String posId) {
-        if (posId == null || posId.trim().isEmpty()) {
-            log.warn("posId is null or empty");
-            return 0;
-        }
-
-        try {
-            List<Application> applications = applicationRepo.loadAllEntities();
-
-            if (applications == null || applications.isEmpty()) {
-                return 0;
-            }
-
-            long appCount = applications.stream()
-                    .filter(app -> app != null && posId.equals(app.getPositionId()) && app.getStatus() != 3)
-                    .count();
-
-            return appCount % appPageSize == 0 ? appCount / appPageSize : appCount / appPageSize + 1;
-        } catch (IOException e) {
-            log.error("get application pages failed, posId: {}, error message: {}", posId, e.getMessage());
-            return 0;
-        }
-    }
 
     public long getAppPages(String posId, QueryCondition condition) {
         if (posId == null || posId.trim().isEmpty()) {

@@ -95,14 +95,28 @@ public class MOServlet extends BaseServlet {
         req.getRequestDispatcher("/views/mo/position.jsp").forward(req, resp);
     }
 
-    private void postPosition(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    private void post(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
+
+        String repostId = req.getParameter("repostId");
+        
+        if (repostId != null && !repostId.trim().isEmpty()) {
+            PosDetailDTO originalPosition = moService.getPosition(repostId);
+            if (originalPosition != null && originalPosition.getStatus() == 3) {
+                req.setAttribute("repostData", originalPosition);
+                req.setAttribute("isRepost", true);
+                req.getSession().setAttribute("repostPositionId", repostId);
+                log.info("Loading repost data for position {}", repostId);
+            } else {
+                log.warn("Invalid repost request for position {}", repostId);
+            }
+        }
 
         req.getRequestDispatcher("/views/mo/post.jsp").forward(req, resp);
     }
 
-    private void createPosition(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    private void postPosition(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
@@ -115,9 +129,18 @@ public class MOServlet extends BaseServlet {
             position.setPostUserId(userId);
             position.setPostDate(Timestamp.valueOf(LocalDateTime.now()));
 
-            boolean success = moService.createPosition(position);
+            String repostId = (String) req.getSession().getAttribute("repostPositionId");
+
+            if (repostId != null && !repostId.trim().isEmpty()) {
+                log.info("Reposting position {}", repostId);
+            }
+
+            boolean success = moService.postPosition(position, repostId);
 
             if (success) {
+                // Clear repost session attribute after successful submission
+                req.getSession().removeAttribute("repostPositionId");
+                
                 Map<String, String> data = new HashMap<>();
                 data.put("posId", position.getId());
                 RespUtils.writeSuccess(resp, data, "Position created successfully");
@@ -131,7 +154,7 @@ public class MOServlet extends BaseServlet {
         }
     }
 
-    private void updatePosition(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    private void withdrawnPosition(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         Object userObj = req.getSession().getAttribute("user");
         if (!verifyUser(req, resp, userObj)) return;
 
@@ -144,30 +167,59 @@ public class MOServlet extends BaseServlet {
         }
 
         if (!moService.verifyPositionOwner(posId, userId)) {
-            RespUtils.writeError(resp, "You don't have permission to update this position", HttpServletResponse.SC_FORBIDDEN);
+            RespUtils.writeError(resp, "You don't have permission to withdraw this position", HttpServletResponse.SC_FORBIDDEN);
             return;
         }
 
-        log.info("MO user {} updating position {}", userId, posId);
+        log.info("MO user {} withdrawing position {}", userId, posId);
 
-        try {
-            Position updatedFields = BeanUtils.mapFromReq(req, Position.class);
+        boolean success = moService.withdrawPosition(posId);
 
-            updatedFields.setId(posId);
-            updatedFields.setPostUserId(userId);
-
-            boolean success = moService.updatePosition(updatedFields);
-
-            if (success) {
-                RespUtils.writeSuccess(resp, "Position updated successfully");
-            } else {
-                RespUtils.writeError(resp, "Failed to update position", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            }
-
-        } catch (Exception e) {
-            log.error("Error updating position {} for user {}", posId, userId, e);
-            RespUtils.writeError(resp, "Error updating position: " + e.getMessage(), HttpServletResponse.SC_BAD_REQUEST);
+        if (success) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("posId", posId);
+            data.put("status", 3);
+            RespUtils.writeSuccess(resp, data, "Position withdrawn successfully");
+        } else {
+            RespUtils.writeError(resp, "Failed to withdraw position", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private void repostPosition(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        Object userObj = req.getSession().getAttribute("user");
+        if (!verifyUser(req, resp, userObj)) return;
+
+        String userId = ((UserDTO) userObj).getId();
+        String posId = req.getParameter("posId");
+
+        if (posId == null || posId.trim().isEmpty()) {
+            log.warn("Repost failed: missing posId for user {}", userId);
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Position ID is required");
+            return;
+        }
+
+        if (!moService.verifyPositionOwner(posId, userId)) {
+            log.warn("Repost failed: user {} unauthorized access to position {}", userId, posId);
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
+            return;
+        }
+
+        PosDetailDTO position = moService.getPosition(posId);
+        if (position == null) {
+            log.warn("Repost failed: position {} not found", posId);
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Position not found");
+            return;
+        }
+
+        if (position.getStatus() != 3) {
+            log.warn("Repost failed: position {} status is {} (expected 3)", posId, position.getStatus());
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Only withdrawn positions can be reposted");
+            return;
+        }
+
+        log.info("MO user {} reposting position {}", userId, posId);
+        
+        resp.sendRedirect(req.getContextPath() + "/moServlet?action=post&repostId=" + posId);
     }
 
     private void listApp(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

@@ -400,8 +400,9 @@ body {
 
 .card-actions {
     margin-top: auto;
-    padding-top: 15px;
-    border-top: 1px solid #f3e5f5;
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
 }
 
 .btn {
@@ -415,10 +416,10 @@ body {
     text-decoration: none;
     display: inline-block;
     text-align: center;
-    width: 100%;
 }
 
 .btn-view {
+    flex: 1;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
 }
@@ -426,6 +427,75 @@ body {
 .btn-view:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-withdraw {
+    flex: 1;
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white;
+}
+
+.btn-withdraw:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+}
+
+.btn-repost {
+    flex: 1;
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-repost:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.btn-withdraw-position {
+    padding: 12px 30px;
+    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 15px;
+    display: inline-block;
+}
+
+.btn-withdraw-position:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+}
+
+.btn-repost-position {
+    padding: 12px 30px;
+    background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 15px;
+    display: inline-block;
+    text-decoration: none;
+}
+
+.btn-repost-position:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
 }
 
 /* Pagination */
@@ -1384,6 +1454,15 @@ select.form-control {
     background-color: #d4edda;
     color: #155724;
     border: 2px solid #c3e6cb;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 2px solid #bee5eb;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
 }
 
 /* Form Actions */

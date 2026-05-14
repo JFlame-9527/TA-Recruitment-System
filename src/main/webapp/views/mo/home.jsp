@@ -128,8 +128,23 @@
                                 <div class="card-actions">
                                     <button class="btn btn-view"
                                             onclick="viewPosition('${pos.posId}', ${condition.page})">
-                                        View Details
+                                        View
                                     </button>
+                                    <c:choose>
+                                        <c:when test="${pos.status == 0}">
+                                            <button class="btn btn-withdraw"
+                                                    data-posid="${pos.posId}"
+                                                    data-page="${condition.page}">
+                                                Withdraw
+                                            </button>
+                                        </c:when>
+                                        <c:when test="${pos.status == 3}">
+                                            <a href="moServlet?action=repostPosition&posId=${pos.posId}"
+                                               class="btn btn-repost">
+                                                Repost
+                                            </a>
+                                        </c:when>
+                                    </c:choose>
                                 </div>
                             </div>
                         </c:forEach>

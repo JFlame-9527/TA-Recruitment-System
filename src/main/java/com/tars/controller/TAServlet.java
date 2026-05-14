@@ -401,4 +401,28 @@ public class TAServlet extends BaseServlet {
             req.getRequestDispatcher("/views/ta/profile.jsp").forward(req, resp);
         }
     }
+
+    private void extractSkills(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        Object userObj = req.getSession().getAttribute("user");
+        if (!verifyUser(req, resp, userObj)) return;
+
+        try {
+            Part resumePart = req.getPart("resume");
+            
+            List<String> skills = taService.extractSkills(resumePart);
+            
+            Map<String, Object> data = new HashMap<>();
+            data.put("skills", skills);
+            
+            RespUtils.writeSuccess(resp, data, "Skills extracted successfully");
+            
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid input for skill extraction: {}", e.getMessage());
+            RespUtils.writeError(resp, e.getMessage(), HttpServletResponse.SC_BAD_REQUEST);
+        } catch (Exception e) {
+            log.error("Failed to extract skills", e);
+            RespUtils.writeError(resp, "Failed to extract skills: " + e.getMessage(), 
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
 }

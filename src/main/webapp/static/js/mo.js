@@ -39,6 +39,45 @@ $(document).ready(function() {
         }
     });
 
+    // Withdraw position from home page
+    $(document).on('click', '.btn-withdraw', function() {
+        const posId = $(this).data('posid');
+        const page = $(this).data('page');
+        const $card = $(this).closest('.position-card');
+
+        if (confirm('Are you sure you want to withdraw this position? This action cannot be undone and will delete all applications.')) {
+            $.ajax({
+                url: 'moServlet',
+                type: 'POST',
+                data: {
+                    action: 'withdrawnPosition',
+                    posId: posId
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Update status to withdrawn (3)
+                        $card.find('.status-badge')
+                            .removeClass('status-opened status-filled status-closed')
+                            .addClass('status-withdrawn')
+                            .text('WITHDRAWN');
+
+                        // Remove withdraw button
+                        $card.find('.btn-withdraw').remove();
+
+                        showMessage('Success', response.message || 'Position withdrawn successfully');
+                    } else {
+                        showMessage('Error', response.message || 'Failed to withdraw position');
+                    }
+                },
+                error: function(xhr) {
+                    const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Failed to withdraw position';
+                    showMessage('Error', errorMsg);
+                }
+            });
+        }
+    });
+
     // Initialize post position form if on post page
     initPostPositionForm();
 });
@@ -73,24 +112,27 @@ function initPostPositionForm() {
     const $addSkillBtn = $('#addSkillBtn');
     const $skillsList = $('#skillsList');
     const $skillsHiddenFields = $('#skillsHiddenFields');
+    
+    // Initialize skills array
+    window.skills = window.skills || [];
 
     function addSkill(skill) {
         skill = skill.trim();
         if (!skill) return;
         
-        if (skills.includes(skill)) {
+        if (window.skills.includes(skill)) {
             showMessage('Warning', 'This skill already exists');
             return;
         }
 
-        skills.push(skill);
+        window.skills.push(skill);
         renderSkills();
         $skillInput.val('');
         $skillInput.focus();
     }
 
     function removeSkill(index) {
-        skills.splice(index, 1);
+        window.skills.splice(index, 1);
         renderSkills();
     }
 
@@ -98,7 +140,7 @@ function initPostPositionForm() {
         $skillsList.empty();
         $skillsHiddenFields.empty();
 
-        skills.forEach((skill, index) => {
+        window.skills.forEach((skill, index) => {
             $skillsList.append(`
                 <div class="skill-tag-item">
                     ${skill}
@@ -123,7 +165,8 @@ function initPostPositionForm() {
         }
     });
 
-    // Make removeSkill globally accessible
+    // Make functions globally accessible
+    window.addSkill = addSkill;
     window.removeSkill = removeSkill;
 
     // Grade requirement management
@@ -149,7 +192,7 @@ function initPostPositionForm() {
     });
 
     // Duration calculation
-    function calculateDuration() {
+    window.calculateDuration = function() {
         const startDateStr = $('#startDate').val();
         const endDateStr = $('#endDate').val();
 
@@ -185,10 +228,10 @@ function initPostPositionForm() {
         const weeks = Math.ceil(diffDays / 7);
 
         $('#duration').val(weeks);
-    }
+    };
 
     $('#startDate, #endDate').change(function() {
-        calculateDuration();
+        window.calculateDuration();
         validateDates();
     });
 
@@ -204,7 +247,7 @@ function initPostPositionForm() {
         $errorDiv.hide();
         $successDiv.hide();
 
-        if (skills.length === 0) {
+        if (window.skills.length === 0) {
             $errorDiv.text('Please add at least one required skill').show();
             return;
         }
@@ -240,7 +283,7 @@ function initPostPositionForm() {
         const formData = new FormData($form[0]);
         
         formData.delete('skills');
-        skills.forEach(function(skill) {
+        window.skills.forEach(function(skill) {
             formData.append('skills', skill);
         });
 
@@ -351,8 +394,8 @@ function initPostPositionForm() {
 
 // Show message with optional callback
 function showMessage(title, message, callback) {
-    $('#messageModalTitle').text(title);
-    $('#messageModalBody').text(message);
+    $('#modalTitle').text(title);
+    $('#modalBody').text(message);
     $('#messageModal').fadeIn(200);
     
     $('#confirmMessageModal').off('click').on('click', function() {
@@ -363,12 +406,13 @@ function showMessage(title, message, callback) {
     });
 }
 
-// Close message modal
-$('.close-modal').click(function() {
+// Close message modal - handle all close button variants
+$(document).on('click', '.close-modal, .close-message-modal, .close-feedback-modal', function() {
     $(this).closest('.modal').fadeOut(200);
 });
 
-$(window).click(function(e) {
+// Close modal when clicking outside
+$(window).on('click', function(e) {
     if ($(e.target).hasClass('modal')) {
         $(e.target).fadeOut(200);
     }
@@ -841,6 +885,43 @@ function showMessage(title, message) {
 // Download resume
 function downloadResume(filePath) {
     window.open('taServlet?action=downloadResume&file=' + encodeURIComponent(filePath), '_blank');
+}
+
+// Withdraw position from detail page
+function withdrawPosition(posId) {
+    if (!confirm('Are you sure you want to withdraw this position? This action cannot be undone and will delete all applications.')) {
+        return;
+    }
+
+    $.ajax({
+        url: 'moServlet',
+        type: 'POST',
+        data: {
+            action: 'withdrawnPosition',
+            posId: posId
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                // Update status badge
+                $('.detail-status .status-badge')
+                    .removeClass('status-opened status-filled status-closed')
+                    .addClass('status-withdrawn')
+                    .text('WITHDRAWN');
+
+                // Remove withdraw button
+                $('.btn-withdraw-position').remove();
+
+                showMessage('Success', response.message || 'Position withdrawn successfully');
+            } else {
+                showMessage('Error', response.message || 'Failed to withdraw position');
+            }
+        },
+        error: function(xhr) {
+            const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Failed to withdraw position';
+            showMessage('Error', errorMsg);
+        }
+    });
 }
 
 // Helper functions

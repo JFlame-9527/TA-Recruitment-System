@@ -163,15 +163,18 @@
                     <div class="detail-dates">
                         <div class="date-row">
                             <span class="date-label">Start Date:</span>
-                            <span class="date-value"><fmt:formatDate value="${position.startDate}" pattern="yyyy-MM-dd"/></span>
+                            <span class="date-value"><fmt:formatDate value="${position.startDate}"
+                                                                     pattern="yyyy-MM-dd"/></span>
                         </div>
                         <div class="date-row">
                             <span class="date-label">End Date:</span>
-                            <span class="date-value"><fmt:formatDate value="${position.endDate}" pattern="yyyy-MM-dd"/></span>
+                            <span class="date-value"><fmt:formatDate value="${position.endDate}"
+                                                                     pattern="yyyy-MM-dd"/></span>
                         </div>
                         <div class="date-row">
                             <span class="date-label">Deadline:</span>
-                            <span class="date-value deadline"><fmt:formatDate value="${position.deadline}" pattern="yyyy-MM-dd"/></span>
+                            <span class="date-value deadline"><fmt:formatDate value="${position.deadline}"
+                                                                              pattern="yyyy-MM-dd"/></span>
                         </div>
                     </div>
 
@@ -199,6 +202,18 @@
                                 <c:when test="${position.status == 3}">WITHDRAWN</c:when>
                             </c:choose>
                         </span>
+                    </div>
+                    <div>
+                        <c:if test="${position.status == 0}">
+                            <button onclick="withdrawPosition('${posId}')" class="btn btn-withdraw-position">
+                                Withdraw Position
+                            </button>
+                        </c:if>
+                        <c:if test="${position.status == 3}">
+                            <a href="moServlet?action=repostPosition&posId=${posId}" class="btn btn-repost-position">
+                                Repost Position
+                            </a>
+                        </c:if>
                     </div>
                 </div>
             </div>
@@ -261,13 +276,13 @@
     let currentOrder = 'applyAt';
 
     // Load approval list on page load
-    $(document).ready(function() {
+    $(document).ready(function () {
         // Bind dropdown change events for position page
-        $('#appFilterSelect').change(function() {
+        $('#appFilterSelect').change(function () {
             setPositionFilter($(this).val());
         });
 
-        $('#appOrderSelect').change(function() {
+        $('#appOrderSelect').change(function () {
             setPositionOrder($(this).val());
         });
 

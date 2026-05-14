@@ -46,7 +46,30 @@
 <main class="main-content">
     <div class="content-wrapper">
         <div class="main-container">
-            <h1 class="page-title">User Management</h1>
+            <div class="page-header">
+                <h1 class="page-title">User Management</h1>
+
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="filterSelect">Filter:</label>
+                        <select id="filterSelect" class="filter-select">
+                            <option value="all" ${taCondition.filter == 'all' || empty taCondition.filter ? 'selected' : ''}>All</option>
+                            <option value="available" ${taCondition.filter == 'available' ? 'selected' : ''}>Available</option>
+                            <option value="unavailable" ${taCondition.filter == 'unavailable' ? 'selected' : ''}>Unavailable</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="orderSelect">Sort by:</label>
+                        <select id="orderSelect" class="filter-select">
+                            <option value="name" ${taCondition.order == 'name' || empty taCondition.order ? 'selected' : ''}>Name</option>
+                            <option value="createAt" ${taCondition.order == 'createAt' ? 'selected' : ''}>Create Date</option>
+                            <option value="updateAt" ${taCondition.order == 'updateAt' ? 'selected' : ''}>Update Date</option>
+                            <option value="lastLoginAt" ${taCondition.order == 'lastLoginAt' ? 'selected' : ''}>Last Login</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
 
             <div class="tab-navigation">
                 <button class="tab-btn active" data-role="1" onclick="switchTab(1)">TA Accounts</button>

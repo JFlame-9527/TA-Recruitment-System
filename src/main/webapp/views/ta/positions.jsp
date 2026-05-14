@@ -63,6 +63,7 @@
                         <label for="orderSelect">Sort by:</label>
                         <select id="orderSelect" class="filter-select">
                             <option value="postDate" ${condition.order == 'postDate' || empty condition.order ? 'selected' : ''}>Post Date</option>
+                            <option value="recommend" ${condition.order == 'recommend' ? 'selected' : ''}>Recommend</option>
                             <option value="deadline" ${condition.order == 'deadline' ? 'selected' : ''}>Deadline</option>
                             <option value="vacancy" ${condition.order == 'vacancy' ? 'selected' : ''}>Vacancy</option>
                             <option value="workload" ${condition.order == 'workload' ? 'selected' : ''}>Workload</option>
