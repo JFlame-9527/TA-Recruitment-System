@@ -189,11 +189,10 @@ public class TAServlet extends BaseServlet {
             return;
         }
 
-        // Generate web-accessible URL for resume if it exists
         if (profile.getResumePath() != null) {
-            String resumeUrl = FileUtils.getFileUrl(req.getContextPath(), profile.getResumePath());
-            req.setAttribute("resumeUrl", resumeUrl);
-            log.debug("Resume URL generated: {}", resumeUrl);
+            String normalizedPath = profile.getResumePath().replace("\\", "/");
+            req.setAttribute("safeResumePath", normalizedPath);
+            log.debug("Normalized resume path: {}", normalizedPath);
         }
 
         req.setAttribute("profile", profile);
@@ -203,7 +202,12 @@ public class TAServlet extends BaseServlet {
     private void downloadResume(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String fileName = req.getParameter("file");
 
-        // Validate and sanitize the file path
+        if (fileName == null || fileName.trim().isEmpty()) {
+            log.warn("Empty file parameter in downloadResume");
+            RespUtils.writeError(resp, "Invalid file path", HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+
         String sanitizedPath = FileUtils.sanitizePath(fileName);
         if (sanitizedPath == null) {
             log.warn("Invalid file path requested: {}", fileName);
@@ -211,9 +215,8 @@ public class TAServlet extends BaseServlet {
             return;
         }
 
-        String webRootPath = getServletContext().getRealPath("");
+        log.info("Serving file: {} (download={})", sanitizedPath, req.getParameter("download"));
 
-        // Serve the file securely using FileUtils
         try {
             FileUtils.serveFile(req, resp, sanitizedPath);
         } catch (IOException e) {

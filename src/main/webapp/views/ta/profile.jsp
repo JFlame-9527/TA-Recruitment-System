@@ -4,6 +4,7 @@
 --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -112,8 +113,8 @@
                                     <span class="file-name">${profile.resumeName}</span>
                                 </div>
                                 <div class="resume-actions">
-                                    <a href="${resumeUrl}" target="_blank" class="btn btn-secondary">View</a>
-                                    <a href="taServlet?action=downloadResume&file=${profile.resumePath}&download=true"
+                                    <a href="taServlet?action=downloadResume&file=${safeResumePath}" target="_blank" class="btn btn-secondary">View</a>
+                                    <a href="taServlet?action=downloadResume&file=${safeResumePath}&download=true"
                                        class="btn btn-secondary">Download</a>
                                 </div>
                             </div>
@@ -134,7 +135,7 @@
                                     data-resume-name="${profile.resumeName}">Edit Profile</button>
                         </div>
 
-                        <div id="profileSkillsData" style="display: none;">
+                        <div class="profile-skills-data" style="display: none;">
                             <c:choose>
                                 <c:when test="${not empty profile.skills}">
                                     <c:forEach var="skill" items="${profile.skills}" varStatus="status">
@@ -144,19 +145,6 @@
                             </c:choose>
                         </div>
                     </div>
-
-                    <script type="application/json" id="profileSkillsData">
-                        <c:choose>
-                            <c:when test="${not empty profile.skills}">
-                                [
-                                    <c:forEach var="skill" items="${profile.skills}" varStatus="status">
-                                        "${skill}"<c:if test="${!status.last}">,</c:if>
-                                    </c:forEach>
-                                ]
-                            </c:when>
-                            <c:otherwise>[]</c:otherwise>
-                        </c:choose>
-                    </script>
                 </c:otherwise>
             </c:choose>
         </div>

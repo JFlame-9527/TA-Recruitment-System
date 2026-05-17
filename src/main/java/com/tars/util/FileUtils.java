@@ -115,6 +115,7 @@ public class FileUtils {
         }
 
         String relativePath = subDir + "/" + safeFileName;
+        relativePath = relativePath.replace("\\", "/");
         log.info("File saved successfully to: {}", relativePath);
 
         return relativePath;
@@ -225,21 +226,23 @@ public class FileUtils {
             return null;
         }
 
-        // Prevent path traversal in URL construction
         if (relativePath.contains("..")) {
             log.warn("Attempted path traversal in URL construction: {}", relativePath);
             return null;
         }
 
-        // Normalize the path (convert backslashes to forward slashes)
         String normalizedPath = relativePath.replace("\\", "/");
 
-        // Ensure it doesn't start with slash
         if (normalizedPath.startsWith("/")) {
             normalizedPath = normalizedPath.substring(1);
         }
 
-        return contextPath + "/" + getFileDir() + "/" + normalizedPath;
+        String fileDir = getFileDir();
+        if (fileDir.endsWith("/") || fileDir.endsWith("\\")) {
+            fileDir = fileDir.replaceAll("[/\\\\]+$", "");
+        }
+
+        return contextPath + "/" + fileDir + "/" + normalizedPath;
     }
 
     /**

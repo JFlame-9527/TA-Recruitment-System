@@ -535,7 +535,6 @@ function openProfileModal(isEdit) {
 function loadExistingProfile() {
     const $btn = $('#editProfileBtn');
     
-    // Read from data attributes
     $('#name').val($btn.data('name') || '');
     $('#gender').val($btn.data('gender') || '');
     $('#age').val($btn.data('age') || '');
@@ -545,9 +544,8 @@ function loadExistingProfile() {
     $('#email').val($btn.data('email') || '');
     $('#phone').val($btn.data('phone') || '');
     
-    // Load skills from hidden span elements
     const skills = [];
-    $('#profileSkillsData .skill-data').each(function() {
+    $('.profile-skills-data .skill-data').each(function() {
         skills.push($(this).text());
     });
     
