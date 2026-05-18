@@ -38,6 +38,11 @@ $(document).ready(function() {
         $('#messageModal').fadeOut(200);
     });
 
+    // Filter and order change handlers
+    $('#filterSelect, #orderSelect').on('change', function() {
+        applyFiltersAndOrder();
+    });
+
     $(document).on('click', '.page-item:not(.active)', function(e) {
         e.preventDefault();
         const $pagination = $(this).closest('.pagination');
@@ -83,13 +88,29 @@ function switchTab(role) {
     }
 }
 
+function applyFiltersAndOrder() {
+    const filter = $('#filterSelect').val() || 'all';
+    const order = $('#orderSelect').val() || 'name';
+    
+    const activeRole = $('.tab-btn.active').data('role') || 1;
+    
+    let url = 'adminServlet?action=listAccounts&page=1&filter=' + encodeURIComponent(filter) + '&order=' + encodeURIComponent(order);
+    
+    window.location.href = url;
+}
+
 function loadUserList(role, page) {
+    const filter = $('#filterSelect').val() || 'all';
+    const order = $('#orderSelect').val() || 'name';
+    
     $.ajax({
         url: 'adminServlet',
         data: {
             action: 'loadAccountsPage',
             role: role,
-            page: page
+            page: page,
+            filter: filter,
+            order: order
         },
         dataType: 'json',
         success: function(response) {

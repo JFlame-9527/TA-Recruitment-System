@@ -24,7 +24,7 @@ import java.util.Map;
 
 /**
  * @author wangyue
- * @version 2.0.0
+ * @version 4.0.0
  * @since 2026/4/14
  */
 @Slf4j
@@ -81,7 +81,7 @@ public class AdminServlet extends BaseServlet {
         QueryCondition condition = BeanUtils.mapFromReq(req, QueryCondition.class);
 
         List<UserDetailDTO> accounts = adminService.getAccountsByRole(role, condition, adminId);
-        long totalPages = adminService.getAccountPages(role, adminId);
+        long totalPages = adminService.getAccountPages(role, condition, adminId);
 
         Map<String, Object> data = new HashMap<>();
         data.put("accounts", accounts);
