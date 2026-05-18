@@ -71,6 +71,51 @@ $(document).ready(function() {
         }
     });
 
+    // Withdraw functionality for detail page
+    $(document).on('click', '#withdrawBtn:not(:disabled)', function() {
+        const appId = $(this).data('appid');
+        
+        if (confirm('Are you sure you want to withdraw this application?')) {
+            $.ajax({
+                url: 'taServlet',
+                type: 'POST',
+                data: {
+                    action: 'withdraw',
+                    appId: appId
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Update status badge to withdrawn
+                        $('#appStatusBadge')
+                            .removeClass('status-applied status-offered status-rejected')
+                            .addClass('status-withdrawn')
+                            .text('WITHDRAWN');
+                        
+                        // Disable and hide withdraw button
+                        $('#withdrawBtn')
+                            .prop('disabled', true)
+                            .text('Withdrawn');
+                        
+                        // Show success message
+                        showMessage('Success', response.message || 'Application withdrawn successfully');
+                        
+                        // Reload page after a short delay to update the view
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        showMessage('Error', response.message || 'Failed to withdraw application');
+                    }
+                },
+                error: function(xhr) {
+                    const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Failed to withdraw application';
+                    showMessage('Error', errorMsg);
+                }
+            });
+        }
+    });
+
     // Filter and order change handlers for Home page
     $('#filterSelect, #orderSelect').on('change', function() {
         if ($('.applied-list').length > 0) {

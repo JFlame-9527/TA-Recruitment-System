@@ -78,6 +78,22 @@ $(document).ready(function() {
         }
     });
 
+    // Bind modal close buttons using event delegation
+    // Profile modal close button (×)
+    $(document).on('click', '#profileModal .close-modal', function() {
+        closeProfileModal();
+    });
+    
+    // Feedback modal close button (×)
+    $(document).on('click', '.close-feedback-modal', function() {
+        closeFeedbackModal();
+    });
+    
+    // Message modal close button (×) - backup for showMessage function
+    $(document).on('click', '#messageModal .close-message-modal', function() {
+        $('#messageModal').fadeOut(200);
+    });
+
     // Initialize post position form if on post page
     initPostPositionForm();
 });
@@ -398,18 +414,22 @@ function showMessage(title, message, callback) {
     $('#modalBody').text(message);
     $('#messageModal').fadeIn(200);
     
+    // Bind confirm button
     $('#confirmMessageModal').off('click').on('click', function() {
         $('#messageModal').fadeOut(200);
         if (callback && typeof callback === 'function') {
             callback();
         }
     });
+    
+    // Bind close button
+    $('.close-message-modal').off('click').on('click', function() {
+        $('#messageModal').fadeOut(200);
+        if (callback && typeof callback === 'function') {
+            callback();
+        }
+    });
 }
-
-// Close message modal - handle all close button variants
-$(document).on('click', '.close-modal, .close-message-modal, .close-feedback-modal', function() {
-    $(this).closest('.modal').fadeOut(200);
-});
 
 // Close modal when clicking outside
 $(window).on('click', function(e) {
@@ -649,7 +669,7 @@ function showProfileModal(profile) {
             ${profile.resumePath ? `
                 <div class="profile-field">
                     <strong>Resume</strong>
-                    <p><a href="#" onclick="downloadResume('${profile.resumePath}'); return false;">
+                    <p><a href="#" onclick="downloadResume('${profile.resumePath.replace(/\\/g, '/')}'); return false;">
                         📄 ${profile.resumeName}
                     </a></p>
                 </div>
@@ -873,13 +893,6 @@ function closeFeedbackModal() {
     $('#feedbackModal').fadeOut(200);
     pendingAction = null;
     pendingAppId = null;
-}
-
-// Show message
-function showMessage(title, message) {
-    $('#modalTitle').text(title);
-    $('#modalBody').text(message);
-    $('#messageModal').fadeIn(200);
 }
 
 // Download resume

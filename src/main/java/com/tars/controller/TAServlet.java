@@ -163,7 +163,9 @@ public class TAServlet extends BaseServlet {
         application.setPositionId(posId);
         application.setUserId(userId);
         application.setStatus(0);
-        boolean applied = taService.createApplication(application);
+        
+        // Use reapplyAfterWithdraw to handle withdrawn applications
+        boolean applied = taService.apply(application);
 
         if (applied) {
             Map<String, String> data = new HashMap<>();

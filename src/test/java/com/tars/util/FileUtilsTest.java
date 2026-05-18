@@ -368,7 +368,16 @@ public class FileUtilsTest {
      * Helper method to create temporary file
      */
     private File createTempFile(String fileName, String contentType, int size) throws IOException {
-        File tempFile = File.createTempFile("test_", "_" + fileName);
+        // Use system temp directory explicitly to avoid path issues
+        String tempDir = System.getProperty("java.io.tmpdir");
+        File tempDirectory = new File(tempDir);
+        
+        // Ensure temp directory exists
+        if (!tempDirectory.exists()) {
+            tempDirectory.mkdirs();
+        }
+        
+        File tempFile = File.createTempFile("test_", "_" + fileName, tempDirectory);
 
         if (size > 0) {
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {

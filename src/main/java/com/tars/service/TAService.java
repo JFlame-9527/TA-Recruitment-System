@@ -208,6 +208,45 @@ public class TAService {
         return true;
     }
 
+    /**
+     * Delete withdrawn application and create new one
+     * This handles the case where user withdraws and then re-applies to the same position
+     *
+     * @param application New application to create
+     * @return true if operation successful, false otherwise
+     */
+    public boolean apply(Application application) {
+        try {
+            List<Application> applications = applicationRepo.loadAllEntities();
+            
+            // Find existing withdrawn application for this user and position
+            Application withdrawnApp = applications.stream()
+                    .filter(app -> app != null 
+                            && application.getUserId().equals(app.getUserId())
+                            && application.getPositionId().equals(app.getPositionId())
+                            && app.getStatus() == 3) // status 3 = withdrawn
+                    .findFirst()
+                    .orElse(null);
+            
+            if (withdrawnApp != null) {
+                log.info("Found withdrawn application {} for user {} and position {}, deleting it",
+                        withdrawnApp.getId(), application.getUserId(), application.getPositionId());
+                
+                // Delete the withdrawn application from repository
+                applicationRepo.deleteEntity(withdrawnApp.getId());
+                log.info("Deleted withdrawn application: {}", withdrawnApp.getId());
+            }
+            
+            // Create new application (this will increment appliedNum)
+            return createApplication(application);
+            
+        } catch (IOException e) {
+            log.error("reapply after withdraw failed, userId: {}, posId: {}, error message: {}",
+                    application.getUserId(), application.getPositionId(), e.getMessage());
+            return false;
+        }
+    }
+
     public List<AppPosDTO> getAppPosList(String userId, QueryCondition condition) {
         if (userId == null || userId.trim().isEmpty()) {
             log.warn("userId is null or empty");

@@ -36,7 +36,7 @@
 
             <nav class="nav-menu">
                 <a href="moServlet?action=listPosition&page=1&filter=all&order=postDate" class="nav-item active">Home</a>
-                <a href="moServlet?action=postPosition" class="nav-item">Post Position</a>
+                <a href="views/mo/post.jsp" class="nav-item">Post Position</a>
             </nav>
         </div>
     </div>

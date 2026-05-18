@@ -878,6 +878,10 @@ body {
     border-top: 2px solid #e3f2fd;
     border-bottom: 2px solid #e3f2fd;
     text-align: center;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
 }
 
 .btn-apply {
@@ -901,6 +905,32 @@ body {
 .btn-apply:disabled {
     background: #ccc;
     cursor: not-allowed;
+    box-shadow: none;
+}
+
+.btn-withdraw-detail {
+    padding: 15px 40px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+}
+
+.btn-withdraw-detail:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(245, 87, 108, 0.5);
+}
+
+.btn-withdraw-detail:disabled {
+    background: #e0e0e0;
+    color: #999;
+    cursor: not-allowed;
+    transform: none;
     box-shadow: none;
 }
 

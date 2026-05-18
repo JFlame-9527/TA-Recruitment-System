@@ -136,6 +136,14 @@
                             data-posid="${position.posId}">
                         Apply Now
                     </button>
+
+                    <c:if test="${position.appId != null && position.appStatus == 0}">
+                        <button class="btn-withdraw-detail"
+                                id="withdrawBtn"
+                                data-appid="${position.appId}">
+                            Withdraw
+                        </button>
+                    </c:if>
                 </div>
 
                 <c:if test="${position.appStatus != -1 && position.appId != null}">
@@ -151,7 +159,8 @@
                                         <c:when test="${position.appStatus == 1}">status-offered</c:when>
                                         <c:when test="${position.appStatus == 2}">status-rejected</c:when>
                                         <c:when test="${position.appStatus == 3}">status-withdrawn</c:when>
-                                    </c:choose>">
+                                    </c:choose>"
+                                    id="appStatusBadge">
                                     <c:choose>
                                         <c:when test="${position.appStatus == 0}">APPLIED</c:when>
                                         <c:when test="${position.appStatus == 1}">OFFERED</c:when>

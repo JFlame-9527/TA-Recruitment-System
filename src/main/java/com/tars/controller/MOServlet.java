@@ -282,6 +282,13 @@ public class MOServlet extends BaseServlet {
             return;
         }
 
+        // Normalize resume path to use forward slashes for URL safety
+        if (profile.getResumePath() != null) {
+            String normalizedPath = profile.getResumePath().replace("\\", "/");
+            profile.setResumePath(normalizedPath);
+            log.debug("Normalized resume path for profile {}: {}", proId, normalizedPath);
+        }
+
         RespUtils.writeSuccess(resp, profile);
     }
 
