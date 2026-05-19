@@ -365,8 +365,12 @@ public class TAService {
             applicationRepo.saveEntity(application);
 
             Position position = positionRepo.getEntityById(application.getPositionId());
-            position.setAppliedNum(position.getAppliedNum() - 1);
-            positionRepo.saveEntity(position);
+            if (position != null) {
+                position.setAppliedNum(position.getAppliedNum() - 1);
+                positionRepo.saveEntity(position);
+            } else {
+                log.warn("Position not found for positionId: {}", application.getPositionId());
+            }
 
             log.info("withdraw application success, appId: {}, userId: {}", appId, userId);
         } catch (IOException e) {
@@ -405,9 +409,9 @@ public class TAService {
             }
             String searchTerm = search;
             posStream = switch (condition.getKey()) {
-                case "title" -> posStream.filter(pos -> pos.getTitle().toLowerCase().contains(searchTerm));
-                case "moduleName" -> posStream.filter(pos -> pos.getModuleName().toLowerCase().contains(searchTerm));
-                case "moduleCode" -> posStream.filter(pos -> pos.getModuleCode().toLowerCase().contains(searchTerm));
+                case "title" -> posStream.filter(pos -> pos.getTitle() != null && pos.getTitle().toLowerCase().contains(searchTerm));
+                case "moduleName" -> posStream.filter(pos -> pos.getModuleName() != null && pos.getModuleName().toLowerCase().contains(searchTerm));
+                case "moduleCode" -> posStream.filter(pos -> pos.getModuleCode() != null && pos.getModuleCode().toLowerCase().contains(searchTerm));
                 default -> posStream;
             };
 
@@ -516,9 +520,9 @@ public class TAService {
             }
             String searchTerm = search;
             posStream = switch (condition.getKey()) {
-                case "title" -> posStream.filter(pos -> pos.getTitle().toLowerCase().contains(searchTerm));
-                case "moduleName" -> posStream.filter(pos -> pos.getModuleName().toLowerCase().contains(searchTerm));
-                case "moduleCode" -> posStream.filter(pos -> pos.getModuleCode().toLowerCase().contains(searchTerm));
+                case "title" -> posStream.filter(pos -> pos.getTitle() != null && pos.getTitle().toLowerCase().contains(searchTerm));
+                case "moduleName" -> posStream.filter(pos -> pos.getModuleName() != null && pos.getModuleName().toLowerCase().contains(searchTerm));
+                case "moduleCode" -> posStream.filter(pos -> pos.getModuleCode() != null && pos.getModuleCode().toLowerCase().contains(searchTerm));
                 default -> posStream;
             };
 

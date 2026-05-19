@@ -111,6 +111,8 @@ public class MOServlet extends BaseServlet {
             } else {
                 log.warn("Invalid repost request for position {}", repostId);
             }
+        } else {
+            req.getSession().removeAttribute("repostPositionId");
         }
 
         req.getRequestDispatcher("/views/mo/post.jsp").forward(req, resp);

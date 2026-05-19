@@ -384,7 +384,9 @@ function toggleStatus(userId, currentStatus) {
                     .addClass(statusClass)
                     .text(statusText);
 
-                $card.find('.btn-toggle').text(toggleText);
+                $card.find('.btn-toggle')
+                    .text(toggleText)
+                    .attr('onclick', `toggleStatus('${userId}', ${newStatus})`);
 
                 showMessage('Success', response.message);
             } else {
