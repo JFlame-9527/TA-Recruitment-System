@@ -226,11 +226,11 @@
     <div class="modal-content modal-large">
         <span class="close-modal">&times;</span>
         <div id="profileContent"></div>
-        <div class="feedback-section">
+        <div class="feedback-section" style="display:none;">
             <label for="feedbackInput">Feedback:</label>
             <textarea id="feedbackInput" placeholder="Enter feedback (optional)..."></textarea>
         </div>
-        <div class="modal-actions">
+        <div class="modal-actions" style="display:none;">
             <button onclick="handleOffer()" class="btn btn-offer">Offer</button>
             <button onclick="handleReject()" class="btn btn-reject">Reject</button>
         </div>

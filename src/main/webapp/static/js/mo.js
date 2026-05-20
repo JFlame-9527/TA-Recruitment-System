@@ -556,7 +556,7 @@ function renderApprovalList(data) {
                     </div>
                 </div>
                 <div class="app-actions">
-                    <button onclick="viewProfile('${app.proId}', '${app.appId}')" 
+                    <button onclick="viewProfile('${app.proId}', '${app.appId}', ${app.status})"
                             class="btn-view-profile">
                         👁 View Profile
                     </button>
@@ -609,7 +609,7 @@ function renderPagination(currentPage, totalPages) {
 }
 
 // View profile
-function viewProfile(proId, appId) {
+function viewProfile(proId, appId, status) {
     $.ajax({
         url: 'moServlet',
         data: {
@@ -622,7 +622,8 @@ function viewProfile(proId, appId) {
             if (response.success) {
                 currentProfileData = response.data;
                 currentProfileData.appId = appId;
-                showProfileModal(response.data);
+                currentProfileData.status = status;
+                showProfileModal(response.data, appId, status);
             } else {
                 showMessage('Error', response.message || 'Failed to load profile');
             }
@@ -635,7 +636,7 @@ function viewProfile(proId, appId) {
 }
 
 // Show profile modal
-function showProfileModal(profile) {
+function showProfileModal(profile, appId, status) {
     const html = `
         <div class="profile-header">
             <h3>${profile.name}'s Profile</h3>
@@ -684,7 +685,18 @@ function showProfileModal(profile) {
     `;
     
     $('#profileContent').html(html);
-    $('#feedbackInput').val(profile.feedback || '');
+
+    const isPending = status === 0;
+
+    if (isPending) {
+        $('#profileModal .feedback-section').show();
+        $('#profileModal .modal-actions').show();
+        $('#feedbackInput').val(profile.feedback || '');
+    } else {
+        $('#profileModal .feedback-section').hide();
+        $('#profileModal .modal-actions').hide();
+    }
+
     $('#profileModal').fadeIn(200);
 }
 
@@ -714,7 +726,7 @@ function handleOffer() {
         success: function(response) {
             if (response.success) {
                 closeProfileModal();
-                updateAppItemStatus(appId, 1, feedback);
+                loadApprovalList(currentAppPage);
                 showMessage('Success', response.message);
             } else {
                 showMessage('Error', response.message);
@@ -757,7 +769,7 @@ function handleReject() {
         success: function(response) {
             if (response.success) {
                 closeProfileModal();
-                updateAppItemStatus(appId, 2, feedback);
+                loadApprovalList(currentAppPage);
                 showMessage('Success', response.message);
             } else {
                 showMessage('Error', response.message);
@@ -811,7 +823,7 @@ function confirmAction() {
             success: function(response) {
                 if (response.success) {
                     closeFeedbackModal();
-                    updateAppItemStatus(pendingAppId, 1, feedback);
+                    loadApprovalList(currentAppPage);
                     showMessage('Success', response.message);
                 } else {
                     showMessage('Error', response.message);
@@ -836,7 +848,7 @@ function confirmAction() {
             success: function(response) {
                 if (response.success) {
                     closeFeedbackModal();
-                    updateAppItemStatus(pendingAppId, 2, feedback);
+                    loadApprovalList(currentAppPage);
                     showMessage('Success', response.message);
                 } else {
                     showMessage('Error', response.message);
@@ -848,39 +860,6 @@ function confirmAction() {
             }
         });
     }
-}
-
-// Update application item status
-function updateAppItemStatus(appId, status, feedback) {
-    console.log('Updating app status:', appId, 'to', status);
-    
-    const $appItem = $(`.app-item[data-appid="${appId}"]`);
-    
-    if ($appItem.length === 0) {
-        console.warn('App item not found for appId:', appId);
-        return;
-    }
-    
-    const statusText = status === 1 ? 'OFFERED' : 'REJECTED';
-    const statusClass = status === 1 ? 'status-offered' : 'status-rejected';
-    
-    $appItem.find('.status-badge')
-        .removeClass('status-applied status-offered status-rejected')
-        .addClass(statusClass)
-        .text(statusText);
-    
-    $appItem.find('.btn-offer-small, .btn-reject-small').remove();
-    
-    if (feedback) {
-        const $actionsDiv = $appItem.find('.app-actions');
-        if ($actionsDiv.length > 0) {
-            $actionsDiv.after(`<p class="app-meta"><strong>Feedback:</strong> ${feedback}</p>`);
-        } else {
-            $appItem.append(`<p class="app-meta"><strong>Feedback:</strong> ${feedback}</p>`);
-        }
-    }
-    
-    console.log('App status updated successfully');
 }
 
 // Close modals
