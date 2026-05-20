@@ -76,23 +76,23 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="college">College</label>
+                            <label for="college">College <span class="required">*</span></label>
                             <input type="text" id="college" name="college" class="form-control"
-                                   placeholder="Enter college name">
+                                   placeholder="Enter college name" required>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="email">Email</label>
+                            <label for="email">Email <span class="required">*</span></label>
                             <input type="email" id="email" name="email" class="form-control"
-                                   placeholder="Enter email address">
+                                   placeholder="Enter email address" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="phone">Phone</label>
+                            <label for="phone">Phone <span class="required">*</span></label>
                             <input type="tel" id="phone" name="phone" class="form-control"
-                                   placeholder="Enter phone number">
+                                   placeholder="Enter phone number" required>
                         </div>
                     </div>
                 </div>

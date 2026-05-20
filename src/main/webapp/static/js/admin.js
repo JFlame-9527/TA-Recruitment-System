@@ -700,8 +700,23 @@ function validateCreateMoForm(data) {
         return false;
     }
 
-    if (data.email && !isValidEmail(data.email)) {
+    if (!data.college) {
+        showCreateMoError('College is required');
+        return false;
+    }
+
+    if (!data.email) {
+        showCreateMoError('Email is required');
+        return false;
+    }
+
+    if (!isValidEmail(data.email)) {
         showCreateMoError('Please enter a valid email address');
+        return false;
+    }
+
+    if (!data.phone) {
+        showCreateMoError('Phone is required');
         return false;
     }
 

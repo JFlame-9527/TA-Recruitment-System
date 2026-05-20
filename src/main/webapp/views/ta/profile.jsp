@@ -166,8 +166,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="gender">Gender</label>
-                    <select id="gender" name="gender" class="form-control">
+                    <label for="gender">Gender <span class="required">*</span></label>
+                    <select id="gender" name="gender" class="form-control" required>
                         <option value="">Select Gender</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
@@ -178,13 +178,13 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="age">Age</label>
-                    <input type="number" id="age" name="age" class="form-control" min="16" max="100">
+                    <label for="age">Age <span class="required">*</span></label>
+                    <input type="number" id="age" name="age" class="form-control" min="16" max="100" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="degree">Degree</label>
-                    <select id="degree" name="degree" class="form-control">
+                    <label for="degree">Degree <span class="required">*</span></label>
+                    <select id="degree" name="degree" class="form-control" required>
                         <option value="">Select Degree</option>
                         <option value="BACHELOR">Bachelor</option>
                         <option value="MASTER">Master</option>
@@ -195,32 +195,32 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="college">College</label>
-                    <input type="text" id="college" name="college" class="form-control" placeholder="e.g., School of Engineering">
+                    <label for="college">College <span class="required">*</span></label>
+                    <input type="text" id="college" name="college" class="form-control" placeholder="e.g., School of Engineering" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="major">Major</label>
-                    <input type="text" id="major" name="major" class="form-control" placeholder="e.g., Computer Science">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="year">Year of Study</label>
-                    <input type="number" id="year" name="year" class="form-control" min="1" max="10" placeholder="e.g., 3">
-                </div>
-
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" class="form-control" placeholder="your.email@example.com">
+                    <label for="major">Major <span class="required">*</span></label>
+                    <input type="text" id="major" name="major" class="form-control" placeholder="e.g., Computer Science" required>
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="phone">Phone</label>
-                    <input type="tel" id="phone" name="phone" class="form-control" placeholder="+44 123 456 7890">
+                    <label for="year">Year of Study <span class="required">*</span></label>
+                    <input type="number" id="year" name="year" class="form-control" min="1" max="10" placeholder="e.g., 3" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email <span class="required">*</span></label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="your.email@example.com" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="phone">Phone <span class="required">*</span></label>
+                    <input type="tel" id="phone" name="phone" class="form-control" placeholder="+44 123 456 7890" required>
                 </div>
 
                 <div class="form-group" style="visibility: hidden;">
@@ -230,7 +230,7 @@
             </div>
 
             <div class="form-group">
-                <label>Skills</label>
+                <label>Skills <span class="required">*</span></label>
                 <div id="skillsContainer" class="skills-input-container">
                     <div class="skill-input-wrapper">
                         <input type="text" id="skillInput" placeholder="Type skill and press Enter">

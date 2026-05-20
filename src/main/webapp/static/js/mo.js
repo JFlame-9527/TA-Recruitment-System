@@ -263,11 +263,55 @@ function initPostPositionForm() {
         $errorDiv.hide();
         $successDiv.hide();
 
-        if (window.skills.length === 0) {
-            $errorDiv.text('Please add at least one required skill').show();
+        // Validate title
+        const title = $('#title').val().trim();
+        if (!title) {
+            $errorDiv.text('Position Title is required').show();
             return;
         }
 
+        // Validate module code
+        const moduleCode = $('#moduleCode').val().trim();
+        if (!moduleCode) {
+            $errorDiv.text('Module Code is required').show();
+            return;
+        }
+
+        // Validate module name
+        const moduleName = $('#moduleName').val().trim();
+        if (!moduleName) {
+            $errorDiv.text('Module Name is required').show();
+            return;
+        }
+
+        // Validate description
+        const description = $('#description').val().trim();
+        if (!description) {
+            $errorDiv.text('Description is required').show();
+            return;
+        }
+
+        // Validate skills
+        if (window.skills.length === 0) {
+            $errorDiv.text('At least one required skill must be added').show();
+            return;
+        }
+
+        // Validate weekly workload
+        const weeklyWorkload = parseFloat($('#weeklyWorkload').val());
+        if (!weeklyWorkload || weeklyWorkload < 1 || weeklyWorkload > 40) {
+            $errorDiv.text('Weekly Workload must be between 1 and 40 hours').show();
+            return;
+        }
+
+        // Validate required number
+        const requiredNum = parseInt($('#requiredNum').val());
+        if (!requiredNum || requiredNum < 1 || requiredNum > 50) {
+            $errorDiv.text('Number of Positions must be between 1 and 50').show();
+            return;
+        }
+
+        // Validate dates
         if (!validateDates()) {
             return;
         }

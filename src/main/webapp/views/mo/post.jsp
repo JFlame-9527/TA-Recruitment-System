@@ -97,7 +97,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Required Skills</label>
+                        <label>Required Skills <span class="required">*</span></label>
                         <div id="skillsContainer" class="skills-input-container">
                             <div class="skill-input-wrapper">
                                 <input type="text" id="skillInput" placeholder="Type skill and press Enter">

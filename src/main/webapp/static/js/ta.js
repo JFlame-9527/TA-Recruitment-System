@@ -689,6 +689,68 @@ function submitProfileForm() {
         return;
     }
     
+    const gender = $('#gender').val();
+    if (!gender) {
+        showFormError('Gender is required');
+        return;
+    }
+    
+    const age = $('#age').val();
+    if (!age || age < 16 || age > 100) {
+        showFormError('Please enter a valid age (16-100)');
+        return;
+    }
+    
+    const degree = $('#degree').val();
+    if (!degree) {
+        showFormError('Degree is required');
+        return;
+    }
+    
+    const college = $('#college').val().trim();
+    if (!college) {
+        showFormError('College is required');
+        return;
+    }
+    
+    const major = $('#major').val().trim();
+    if (!major) {
+        showFormError('Major is required');
+        return;
+    }
+    
+    const year = $('#year').val();
+    if (!year || year < 1 || year > 10) {
+        showFormError('Please enter a valid year of study (1-10)');
+        return;
+    }
+    
+    const email = $('#email').val().trim();
+    if (!email) {
+        showFormError('Email is required');
+        return;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showFormError('Please enter a valid email address');
+        return;
+    }
+    
+    const phone = $('#phone').val().trim();
+    if (!phone) {
+        showFormError('Phone is required');
+        return;
+    }
+    
+    // Validate at least one skill
+    const skillCount = $('.skill-editable-tag').length;
+    if (skillCount === 0) {
+        showFormError('At least one skill is required');
+        return;
+    }
+    
     if (!window.isEditMode) {
         const resume = $('#resume')[0].files[0];
         if (!resume) {
@@ -701,6 +763,8 @@ function submitProfileForm() {
     if (resumeFile && !validateResumeFile($('#resume')[0])) {
         return;
     }
+    
+    hideFormError();
     
     // Disable submit button
     $('#submitBtn').prop('disabled', true).text('Saving...');

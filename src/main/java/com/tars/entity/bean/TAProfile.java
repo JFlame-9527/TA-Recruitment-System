@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,7 +36,7 @@ public class TAProfile {
 
     private int grade;
 
-    private List<String> skills;
+    private List<String> skills = new ArrayList<>();
 
     private String email;
 
@@ -70,6 +71,11 @@ public class TAProfile {
     }
 
     private void setGrade() {
+        if (degree == null || degree.trim().isEmpty()) {
+            this.grade = year;
+            return;
+        }
+        
         int offset = switch (degree.toUpperCase()) {
             case "BACHELOR" -> 0;
             case "MASTER" -> 10;
