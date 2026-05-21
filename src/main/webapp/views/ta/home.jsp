@@ -154,6 +154,34 @@
     </div>
 </div>
 
+<div id="editUserModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3>Edit Account</h3>
+        <form id="editUserForm">
+            <input type="hidden" name="userId" id="editUserId" value="${sessionScope.user.id}">
+
+            <div class="form-group">
+                <label for="editUsername">Username</label>
+                <input type="text" id="editUsername" name="username" class="form-control" value="${sessionScope.user.name}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="editPassword">New Password (min 6 characters)</label>
+                <input type="password" id="editPassword" name="newPassword" class="form-control" minlength="6">
+                <small class="form-hint">Leave empty to keep current password</small>
+            </div>
+
+            <div id="editUserError" class="alert alert-danger" style="display: none;"></div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeEditUserModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     window.pageLoading = false;
 </script>

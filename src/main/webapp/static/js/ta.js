@@ -21,7 +21,7 @@ $(document).ready(function() {
 
     // Edit functionality
     $('.dropdown-item.edit').click(function() {
-        alert('Edit profile - to be implemented');
+        openEditUserModal();
     });
 
     // Exit functionality
@@ -118,14 +118,16 @@ $(document).ready(function() {
 
     // Filter and order change handlers for Home page
     $('#filterSelect, #orderSelect').on('change', function() {
-        if ($('.applied-list').length > 0) {
+        // Check if we're on the home/applied list page by looking at unique elements
+        if ($('#filterSelect').length > 0 && $('.page-title').text().includes('My Applications')) {
             applyFiltersAndOrder('listApplied');
         }
     });
 
     // Filter, order, and search key change handlers for Positions page
     $('#filterSelect, #orderSelect, #searchKeySelect').on('change', function() {
-        if ($('.position-list').length > 0) {
+        // Check if we're on the positions page by looking for search input
+        if ($('#searchInput').length > 0) {
             applyFiltersAndOrder('listPositions');
         }
     });
@@ -191,8 +193,9 @@ $(document).ready(function() {
     }
 
     // Close modal
-    $('.close-modal').click(function() {
-        $('#messageModal').fadeOut(200);
+    $(document).on('click', '.close-modal', function() {
+        const $modal = $(this).closest('.modal');
+        $modal.fadeOut(200);
     });
 
     $('#confirmModal, #confirmMessageModal').click(function() {
@@ -353,11 +356,6 @@ $(document).ready(function() {
         openProfileModal(true);
     });
     
-    // Close modal
-    $('.close-modal').on('click', function() {
-        $('#profileModal').fadeOut(200);
-    });
-    
     $('#cancelBtn').on('click', function() {
         $('#profileModal').fadeOut(200);
     });
@@ -366,6 +364,9 @@ $(document).ready(function() {
     $(window).on('click', function(e) {
         if ($(e.target).is('#profileModal')) {
             $('#profileModal').fadeOut(200);
+        }
+        if ($(e.target).is('#editUserModal')) {
+            closeEditUserModal();
         }
     });
     
@@ -815,3 +816,66 @@ function showMessage(title, message) {
 $('#confirmMessageModal').on('click', function() {
     $('#messageModal').fadeOut(200);
 });
+
+function openEditUserModal() {
+    // Clear password field and error
+    $('#editPassword').val('');
+    $('#editUserError').hide();
+    
+    // Show modal
+    $('#editUserModal').css('display', 'flex');
+}
+
+function closeEditUserModal() {
+    $('#editUserModal').fadeOut(200);
+}
+
+$(document).ready(function() {
+    $('#editUserForm').on('submit', function(e) {
+        e.preventDefault();
+        submitEditUserForm();
+    });
+});
+
+function submitEditUserForm() {
+    const userId = $('#editUserId').val();
+    const username = $('#editUsername').val().trim();
+    const newPassword = $('#editPassword').val();
+
+    if (!username) {
+        $('#editUserError').text('Username is required').show();
+        return;
+    }
+
+    if (newPassword && newPassword.length < 6) {
+        $('#editUserError').text('Password must be at least 6 characters').show();
+        return;
+    }
+
+    $.ajax({
+        url: 'userServlet',
+        type: 'POST',
+        data: {
+            action: 'modifyUser',
+            userId: userId,
+            username: username,
+            password: newPassword
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                closeEditUserModal();
+                showMessage('Success', 'Account updated successfully. Please refresh the page.');
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
+            } else {
+                $('#editUserError').text(response.message || 'Failed to update account').show();
+            }
+        },
+        error: function(xhr) {
+            const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Network error';
+            $('#editUserError').text(errorMsg).show();
+        }
+    });
+}

@@ -299,9 +299,9 @@ public class AdminService {
 
             userStream = switch (condition.getOrder()) {
                 case "name" -> userStream.sorted(Comparator.comparing(User::getName));
-                case "createAt" -> userStream.sorted(Comparator.comparing(User::getCreateAt).reversed());
-                case "updateAt" -> userStream.sorted(Comparator.comparing(User::getUpdateAt).reversed());
-                case "lastLoginAt" -> userStream.sorted(Comparator.comparing(User::getLastLoginAt).reversed());
+                case "createAt" -> userStream.sorted(Comparator.comparing(User::getCreateAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed());
+                case "updateAt" -> userStream.sorted(Comparator.comparing(User::getUpdateAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed());
+                case "lastLoginAt" -> userStream.sorted(Comparator.comparing(User::getLastLoginAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed());
                 default -> userStream.sorted(Comparator.comparing(User::getName));
             };
             return userStream.skip((long) (pageNum - 1) * pageSize)
