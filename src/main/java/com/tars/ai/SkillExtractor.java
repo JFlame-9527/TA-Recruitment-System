@@ -23,16 +23,36 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Skill extractor using Qwen AI to analyze resumes and extract technical/professional skills
+ * Skill extractor using Qwen AI to analyze resumes and extract technical/professional skills.
+ * <p>
+ * This class provides an automated solution for extracting relevant skills from resume documents.
+ * It leverages the Qwen-long model through DashScope SDK to intelligently identify and normalize
+ * technical skills, programming languages, frameworks, tools, and soft skills.
+ * </p>
  * <p>
  * Workflow:
- * 1. Upload file via OpenAI-compatible API -> get fileId
- * 2. Process file with DashScope SDK (qwen-long model) -> extract skills
- * 3. Parse response to List<String>
+ * <ol>
+ *   <li>Upload file via OpenAI-compatible API to obtain fileId</li>
+ *   <li>Process file with DashScope SDK (qwen-long model) to extract skills</li>
+ *   <li>Parse JSON response to List&lt;String&gt;</li>
+ *   <li>Apply fallback parsing if JSON parsing fails</li>
+ * </ol>
+ * </p>
+ * <p>
+ * Key features:
+ * <ul>
+ *   <li>Automatic skill name normalization to industry-standard terminology</li>
+ *   <li>Duplicate removal and vague term filtering</li>
+ *   <li>Robust error handling with fallback extraction mechanism</li>
+ *   <li>Support for multiple file formats (PDF, DOC, DOCX, TXT)</li>
+ * </ul>
+ * </p>
  *
  * @author Jflame
  * @version 3.0.0
  * @since 2026/4/16
+ * @see FileParser
+ * @see QwenConfiguration
  */
 @Slf4j
 public class SkillExtractor {
@@ -69,6 +89,16 @@ public class SkillExtractor {
 
     private static final Pattern JSON_ARRAY_PATTERN = Pattern.compile("\\[([^]]*)]");
 
+    /**
+     * Constructs a new SkillExtractor instance.
+     * <p>
+     * Initializes the extractor with configuration from {@link QwenConfiguration},
+     * creates an {@link ObjectMapper} for JSON processing, and instantiates
+     * a {@link FileParser} for file upload operations.
+     * </p>
+     *
+     * @throws RuntimeException if configuration initialization fails
+     */
     public SkillExtractor() {
         QwenConfiguration config = QwenConfiguration.getInstance();
         this.apiKey = config.getApiKey();
@@ -80,10 +110,23 @@ public class SkillExtractor {
     }
 
     /**
-     * Extract skills from uploaded resume file
+     * Extracts skills from an uploaded resume file.
+     * <p>
+     * This method orchestrates the complete skill extraction process:
+     * <ol>
+     *   <li>Validates and uploads the file to obtain a fileId</li>
+     *   <li>Sends the file to Qwen AI for analysis</li>
+     *   <li>Parses the AI response into a structured list of skills</li>
+     * </ol>
+     * </p>
      *
-     * @param filePart Multipart file from HTTP request
-     * @return List of extracted skills
+     * @param filePart Multipart file from HTTP request containing the resume
+     * @return List of extracted skills as strings, never null (could be empty)
+     * @throws IllegalArgumentException if file part is invalid or unsupported format
+     * @throws RuntimeException if skill extraction fails completely
+     * @see FileParser#extractFileId(Part)
+     * @see #processFile(String)
+     * @see #parseResponse(String)
      */
     public List<String> extract(Part filePart) {
         String fileName = filePart.getSubmittedFileName();
@@ -107,6 +150,23 @@ public class SkillExtractor {
         }
     }
 
+    /**
+     * Processes a file using the Qwen-long model to extract skills.
+     * <p>
+     * Sends three messages to the AI model:
+     * <ol>
+     *   <li>System message with extraction rules and guidelines</li>
+     *   <li>File reference message with the fileId</li>
+     *   <li>User message requesting skill extraction</li>
+     * </ol>
+     * </p>
+     *
+     * @param fileId the file identifier obtained from file upload
+     * @return Raw AI response containing JSON array of skills
+     * @throws RuntimeException if API call fails or returns empty response
+     * @see #SYSTEM_PROMPT
+     * @see #USER_PROMPT
+     */
     private String processFile(String fileId) {
         try {
             Generation generation = new Generation();
@@ -140,9 +200,7 @@ public class SkillExtractor {
 
             GenerationResult result = generation.call(param);
 
-            if (result == null || result.getOutput() == null ||
-                    result.getOutput().getChoices() == null ||
-                    result.getOutput().getChoices().isEmpty()) {
+            if (result.getOutput() == null || result.getOutput().getChoices() == null || result.getOutput().getChoices().isEmpty()) {
                 throw new RuntimeException("Empty response from Qwen API");
             }
 
@@ -160,7 +218,21 @@ public class SkillExtractor {
     }
 
     /**
-     * Step 3: Parse AI response to List<String>
+     * Parses the AI response into a list of skill strings.
+     * <p>
+     * Parsing strategy:
+     * <ol>
+     *   <li>Attempts to extract JSON array using regex pattern matching</li>
+     *   <li>Parses JSON using Jackson ObjectMapper</li>
+     *   <li>Filters out null and empty values</li>
+     *   <li>Falls back to manual string parsing if JSON parsing fails</li>
+     * </ol>
+     * </p>
+     *
+     * @param response Raw response string from AI model
+     * @return List of extracted skills, never null (could be empty)
+     * @see #extractJsonArray(String)
+     * @see #fallbackParse(String)
      */
     private List<String> parseResponse(String response) {
         if (response == null || response.trim().isEmpty()) {
@@ -176,7 +248,8 @@ public class SkillExtractor {
 
             List<String> skills = objectMapper.readValue(
                     jsonStr,
-                    new TypeReference<List<String>>() {}
+                    new TypeReference<>() {
+                    }
             );
 
             // Filter out null/empty values
@@ -194,7 +267,15 @@ public class SkillExtractor {
     }
 
     /**
-     * Extract JSON array from text using regex
+     * Extracts JSON array from text using regex pattern matching.
+     * <p>
+     * Uses the pattern {@code \[([^\]]*)\]} to find content within square brackets.
+     * This handles cases where AI wraps JSON in markdown code blocks or adds explanations.
+     * </p>
+     *
+     * @param text The text containing potential JSON array
+     * @return Extracted JSON array string, or null if no match found
+     * @see #JSON_ARRAY_PATTERN
      */
     private String extractJsonArray(String text) {
         Matcher matcher = JSON_ARRAY_PATTERN.matcher(text);
@@ -202,7 +283,19 @@ public class SkillExtractor {
     }
 
     /**
-     * Fallback: manual parsing if JSON fails
+     * Fallback manual parsing when JSON parsing fails.
+     * <p>
+     * This method uses simple string manipulation to extract skills:
+     * <ol>
+     *   <li>Removes quotes, brackets, and other JSON syntax characters</li>
+     *   <li>Splits by comma delimiter</li>
+     *   <li>Trims whitespace from each skill</li>
+     *   <li>Filters out strings that are too short (&lt;2 chars) or too long (&gt;100 chars)</li>
+     * </ol>
+     * </p>
+     *
+     * @param text Raw text response from AI
+     * @return List of extracted skills using manual parsing
      */
     private List<String> fallbackParse(String text) {
         List<String> skills = new ArrayList<>();

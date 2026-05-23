@@ -27,6 +27,48 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Portrait generator that creates comprehensive candidate and position profiles using AI.
+ * <p>
+ * This class generates structured professional portraits for both Technical Assistant (TA) candidates
+ * and job positions. Each portrait consists of three dimensions:
+ * <ul>
+ *   <li><b>Skills</b>: Technical and professional capabilities</li>
+ *   <li><b>Experience</b>: Work history and achievements summary</li>
+ *   <li><b>Soft Skills</b>: Interpersonal and behavioral competencies</li>
+ * </ul>
+ * </p>
+ * <p>
+ * The generated portraits are vectorized using embedding models to enable similarity calculations
+ * and candidate-position matching through {@link PortraitMatcher}.
+ * </p>
+ * <p>
+ * Key features:
+ * <ul>
+ *   <li>Multi-model orchestration (qwen, qwen-long, qwen-vector)</li>
+ *   <li>Resume content extraction from various file formats (PDF, DOC, DOCX, TXT, MD)</li>
+ *   <li>Fallback mechanism for profile-only generation when resume processing fails</li>
+ *   <li>Vector embedding generation for semantic similarity matching</li>
+ *   <li>Support for both multipart uploads and existing files</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Model usage:
+ * <ul>
+ *   <li><b>qwen-long</b>: Extracts full text content from resume files</li>
+ *   <li><b>qwen</b>: Generates structured portrait data from text</li>
+ *   <li><b>qwen-vector</b>: Creates vector embeddings for similarity comparison</li>
+ * </ul>
+ * </p>
+ *
+ * @author Jflame
+ * @version 3.0.0
+ * @since 2026/4/16
+ * @see Portrait
+ * @see PortraitMatcher
+ * @see FileParser
+ * @see QwenConfiguration
+ */
 @Slf4j
 public class PortraitGenerator {
 
@@ -127,6 +169,17 @@ public class PortraitGenerator {
             Provide the portrait as a JSON object with skills, experience, and soft-skills.
             """;
 
+    /**
+     * Constructs a new PortraitGenerator instance.
+     * <p>
+     * Initializes the generator with configuration from {@link QwenConfiguration},
+     * sets up three model configurations (qwen, qwen-long, qwen-vector),
+     * creates an {@link ObjectMapper} for JSON processing, and instantiates
+     * a {@link FileParser} for file upload operations.
+     * </p>
+     *
+     * @throws RuntimeException if configuration initialization fails
+     */
     public PortraitGenerator() {
         QwenConfiguration config = QwenConfiguration.getInstance();
         this.apiKey = config.getApiKey();
@@ -141,12 +194,29 @@ public class PortraitGenerator {
     }
 
     /**
-     * Generate portrait for TA candidate from profile and resume
-     * Falls back to profile-only data if resume processing fails
+     * Generates a portrait for a TA candidate from profile and uploaded resume.
+     * <p>
+     * This method orchestrates the complete portrait generation process:
+     * <ol>
+     *   <li>Uploads the resume file to obtain a fileId</li>
+     *   <li>Extracts full text content from the resume using qwen-long</li>
+     *   <li>Generates structured portrait data using qwen model</li>
+     *   <li>Vectorizes all portrait dimensions using qwen-vector</li>
+     * </ol>
+     * </p>
+     * <p>
+     * <b>Fallback Strategy:</b> If resume processing fails at any step, the method automatically
+     * falls back to generating a portrait using only the profile information. This ensures
+     * robustness even when resume files are corrupted or unreadable.
+     * </p>
      *
-     * @param profile TA profile information
-     * @param resume  Uploaded resume file
-     * @return Vectorized portrait object
+     * @param profile TA profile information containing name, education, and existing skills
+     * @param resume  Uploaded resume file as multipart data
+     * @return Vectorized portrait object with skills, experience, and soft skills vectors
+     * @throws RuntimeException if portrait generation fails completely (including fallback)
+     * @see #generateTAPortrait(TAProfile, String)
+     * @see #generateTAPortraitFromProfileOnly(TAProfile)
+     * @see #vectorizePortrait(PortraitRaw)
      */
     public Portrait generatePortrait(TAProfile profile, Part resume) {
         log.info("Generating portrait for TA: {}", profile.getName());
@@ -178,6 +248,19 @@ public class PortraitGenerator {
         }
     }
 
+    /**
+     * Generates a portrait for a TA candidate from profile and existing resume file.
+     * <p>
+     * This is an overloaded version that accepts a {@link File} object instead of {@link Part}.
+     * It follows the same workflow and fallback strategy as {@link #generatePortrait(TAProfile, Part)}.
+     * </p>
+     *
+     * @param profile TA profile information containing name, education, and existing skills
+     * @param resume  Existing resume file on disk
+     * @return Vectorized portrait object with skills, experience, and soft skills vectors
+     * @throws RuntimeException if portrait generation fails completely (including fallback)
+     * @see #generatePortrait(TAProfile, Part)
+     */
     public Portrait generatePortrait(TAProfile profile, File resume) {
         log.info("Generating portrait for TA: {}", profile.getName());
 
@@ -209,10 +292,26 @@ public class PortraitGenerator {
     }
 
     /**
-     * Generate portrait for Position
+     * Generates a portrait for a job position.
+     * <p>
+     * This method analyzes the position details and requirements to create an ideal candidate profile.
+     * The process includes:
+     * <ol>
+     *   <li>Building a prompt with position details (title, module, description, skills, etc.)</li>
+     *   <li>Calling qwen model to generate structured portrait data</li>
+     *   <li>Vectorizing all portrait dimensions for similarity matching</li>
+     * </ol>
+     * </p>
+     * <p>
+     * Unlike TA portrait generation, this method does not have a fallback mechanism
+     * since position data is always structured and available.
+     * </p>
      *
-     * @param position Position details
-     * @return Vectorized portrait object
+     * @param position Position details including title, description, required skills, duration, and workload
+     * @return Vectorized portrait object representing the ideal candidate profile
+     * @throws RuntimeException if position portrait generation fails
+     * @see #generatePositionPortrait(Position)
+     * @see #vectorizePortrait(PortraitRaw)
      */
     public Portrait generatePortrait(Position position) {
         log.info("Generating portrait for position: {}", position.getTitle());
@@ -231,7 +330,24 @@ public class PortraitGenerator {
     }
 
     /**
-     * Extract raw resume content using qwen-long
+     * Extracts raw text content from a resume file using qwen-long model.
+     * <p>
+     * This method sends three messages to the AI model:
+     * <ol>
+     *   <li>System message instructing to extract complete text content</li>
+     *   <li>File reference message with the fileId (format: {@code fileid://<fileId>})</li>
+     *   <li>User message requesting text extraction</li>
+     * </ol>
+     * </p>
+     * <p>
+     * The qwen-long model is specifically chosen for its ability to handle long documents
+     * and preserve formatting, structure, and all relevant information from resumes.
+     * </p>
+     *
+     * @param fileId the file identifier obtained from file upload
+     * @return Complete text content extracted from the resume
+     * @throws RuntimeException if API call fails or returns empty response
+     * @see #qwenLong
      */
     private String extractResumeContent(String fileId) {
         try {
@@ -266,9 +382,7 @@ public class PortraitGenerator {
 
             GenerationResult result = generation.call(param);
 
-            if (result == null || result.getOutput() == null ||
-                    result.getOutput().getChoices() == null ||
-                    result.getOutput().getChoices().isEmpty()) {
+            if (result.getOutput() == null || result.getOutput().getChoices() == null || result.getOutput().getChoices().isEmpty()) {
                 throw new RuntimeException("Empty response from Qwen API");
             }
 
@@ -286,7 +400,24 @@ public class PortraitGenerator {
     }
 
     /**
-     * Generate TA portrait from profile and resume content
+     * Generates a TA portrait from profile information and resume content.
+     * <p>
+     * This method combines structured profile data (name, education, existing skills)
+     * with unstructured resume content to create a comprehensive candidate portrait.
+     * The AI model analyzes both sources to extract:
+     * <ul>
+     *   <li>Technical skills from resume and profile</li>
+     *   <li>Experience narrative based on work history</li>
+     *   <li>Soft skills inferred from project descriptions and achievements</li>
+     * </ul>
+     * </p>
+     *
+     * @param profile TA profile containing structured information
+     * @param resumeContent Full text content extracted from resume
+     * @return Raw portrait object with skills, experience, and soft skills as strings
+     * @see #TA_SYSTEM_PROMPT
+     * @see #TA_USER_PROMPT_TEMPLATE
+     * @see #callQwenForPortrait(String, String, ModelOption)
      */
     private PortraitRaw generateTAPortrait(TAProfile profile, String resumeContent) {
         String prompt = String.format(TA_USER_PROMPT_TEMPLATE,
@@ -302,7 +433,21 @@ public class PortraitGenerator {
     }
 
     /**
-     * Generate TA portrait from profile only (fallback)
+     * Generates a TA portrait from profile information only (fallback method).
+     * <p>
+     * This method is used when resume processing fails. It generates a portrait
+     * using only the structured profile data, with a placeholder message indicating
+     * that no resume is available. The AI model infers additional information
+     * from the existing skills and educational background.
+     * </p>
+     * <p>
+     * While less comprehensive than the full method, this fallback ensures that
+     * candidates can still be evaluated even without a readable resume.
+     * </p>
+     *
+     * @param profile TA profile containing structured information
+     * @return Raw portrait object with skills, experience, and soft skills as strings
+     * @see #generateTAPortrait(TAProfile, String)
      */
     private PortraitRaw generateTAPortraitFromProfileOnly(TAProfile profile) {
         String prompt = String.format(TA_USER_PROMPT_TEMPLATE,
@@ -318,7 +463,22 @@ public class PortraitGenerator {
     }
 
     /**
-     * Generate Position portrait
+     * Generates a position portrait from job details.
+     * <p>
+     * This method analyzes the position requirements to create an ideal candidate profile.
+     * The AI model evaluates:
+     * <ul>
+     *   <li>Required and preferred technical skills</li>
+     *   <li>Experience level and domain expertise needed</li>
+     *   <li>Soft skills derived from job responsibilities</li>
+     *   <li>Project complexity and collaboration requirements</li>
+     * </ul>
+     * </p>
+     *
+     * @param position Position details including title, module, description, skills, duration, and workload
+     * @return Raw portrait object representing the ideal candidate profile
+     * @see #POSITION_SYSTEM_PROMPT
+     * @see #POSITION_USER_PROMPT_TEMPLATE
      */
     private PortraitRaw generatePositionPortrait(Position position) {
         String prompt = String.format(POSITION_USER_PROMPT_TEMPLATE,
@@ -335,7 +495,19 @@ public class PortraitGenerator {
     }
 
     /**
-     * Call Qwen API for portrait generation
+     * Calls the Qwen API for portrait generation.
+     * <p>
+     * This is a generic method used by all portrait generation workflows. It constructs
+     * a two-message conversation (system + user) and sends it to the specified model.
+     * </p>
+     *
+     * @param systemPrompt System message defining the AI's role and task instructions
+     * @param userPrompt User message containing specific data to analyze
+     * @param model Model configuration to use (qwen, qwen-long, etc.)
+     * @return Raw text response from the AI model
+     * @throws RuntimeException if API call fails or returns empty response
+     * @see GenerationParam
+     * @see Message
      */
     private String callQwenForPortrait(String systemPrompt, String userPrompt, ModelOption model) {
         try {
@@ -365,9 +537,7 @@ public class PortraitGenerator {
 
             GenerationResult result = generation.call(param);
 
-            if (result == null || result.getOutput() == null ||
-                    result.getOutput().getChoices() == null ||
-                    result.getOutput().getChoices().isEmpty()) {
+            if (result.getOutput() == null || result.getOutput().getChoices() == null || result.getOutput().getChoices().isEmpty()) {
                 throw new RuntimeException("Empty response from Qwen API");
             }
 
@@ -385,7 +555,24 @@ public class PortraitGenerator {
     }
 
     /**
-     * Parse AI response to PortraitData object
+     * Parses the AI response into a PortraitRaw object.
+     * <p>
+     * This method uses Jackson ObjectMapper to deserialize the JSON response
+     * into a {@link PortraitRaw} object. The expected JSON format is:
+     * <pre>{@code
+     * {
+     *   "skills": ["Java", "Spring Boot", "MySQL"],
+     *   "experience": "5 years of backend development...",
+     *   "softSkills": ["Communication", "Leadership"]
+     * }
+     * }</pre>
+     * </p>
+     *
+     * @param response Raw JSON response from AI model
+     * @return Parsed PortraitRaw object
+     * @throws RuntimeException if response is empty or JSON parsing fails
+     * @see PortraitRaw
+     * @see ObjectMapper#readValue(String, Class)
      */
     private PortraitRaw parsePortraitResponse(String response) {
         if (response == null || response.trim().isEmpty()) {
@@ -401,7 +588,29 @@ public class PortraitGenerator {
     }
 
     /**
-     * Vectorize portrait fields using qwenVector embedding model
+     * Vectorizes all portrait dimensions using the qwen-vector embedding model.
+     * <p>
+     * This method converts the textual portrait data into numerical vectors:
+     * <ol>
+     *   <li>Formats skills list into a single string</li>
+     *   <li>Generates embedding for skills string</li>
+     *   <li>Generates embedding for experience narrative</li>
+     *   <li>Formats and generates embedding for soft skills list</li>
+     *   <li>Constructs a Portrait object with all three vectors</li>
+     * </ol>
+     * </p>
+     * <p>
+     * These vectors enable semantic similarity calculations through cosine similarity,
+     * allowing the system to match candidates with positions based on conceptual
+     * proximity rather than exact keyword matching.
+     * </p>
+     *
+     * @param portrait Raw portrait object with string-based data
+     * @return Vectorized Portrait object suitable for similarity matching
+     * @throws RuntimeException if embedding generation fails
+     * @see #generateEmbedding(String)
+     * @see #formatSkillsForEmbedding(List)
+     * @see #formatSoftSkillsForEmbedding(List)
      */
     private Portrait vectorizePortrait(PortraitRaw portrait) {
         try {
@@ -418,7 +627,26 @@ public class PortraitGenerator {
     }
 
     /**
-     * Generate embedding for a text string
+     * Generates a vector embedding for a text string using qwen-vector model.
+     * <p>
+     * This method converts textual data into a high-dimensional vector representation
+     * that captures semantic meaning. The embedding process:
+     * <ol>
+     *   <li>Validates input text (returns empty list if null or empty)</li>
+     *   <li>Calls the TextEmbedding API with the text</li>
+     *   <li>Converts the Double[] response to List&lt;Float&gt;</li>
+     * </ol>
+     * </p>
+     * <p>
+     * The resulting vectors can be compared using cosine similarity to determine
+     * semantic relatedness between different pieces of text.
+     * </p>
+     *
+     * @param text The text to convert into a vector embedding
+     * @return List of floats representing the embedding vector, or empty list if text is empty
+     * @throws RuntimeException if embedding API call fails
+     * @see TextEmbedding
+     * @see #qwenVector
      */
     private List<Float> generateEmbedding(String text) {
         if (text == null || text.trim().isEmpty()) {
@@ -458,7 +686,15 @@ public class PortraitGenerator {
     }
 
     /**
-     * Format skills array for embedding
+     * Formats a list of skills into a single string for embedding generation.
+     * <p>
+     * Converts a skill list like {@code ["Java", "Spring", "MySQL"]} into
+     * {@code "Technical skills: Java, Spring, MySQL"}. This formatting helps
+     * the embedding model understand the context and semantic category of the terms.
+     * </p>
+     *
+     * @param skills List of skill strings
+     * @return Formatted string with "Technical skills: " prefix, or empty string if skills is null/empty
      */
     private String formatSkillsForEmbedding(List<String> skills) {
         if (skills == null || skills.isEmpty()) {
@@ -468,7 +704,15 @@ public class PortraitGenerator {
     }
 
     /**
-     * Format soft skills array for embedding
+     * Formats a list of soft skills into a single string for embedding generation.
+     * <p>
+     * Converts a soft skill list like {@code ["Leadership", "Communication"]} into
+     * {@code "Soft skills: Leadership, Communication"}. This formatting provides
+     * context to the embedding model about the nature of these skills.
+     * </p>
+     *
+     * @param softSkills List of soft skill strings
+     * @return Formatted string with "Soft skills: " prefix, or empty string if softSkills is null/empty
      */
     private String formatSoftSkillsForEmbedding(List<String> softSkills) {
         if (softSkills == null || softSkills.isEmpty()) {
@@ -478,7 +722,15 @@ public class PortraitGenerator {
     }
 
     /**
-     * Raw portrait data structure for JSON parsing
+     * Internal data structure for holding raw portrait data during JSON parsing.
+     * <p>
+     * This class serves as an intermediate representation between the AI's JSON response
+     * and the final vectorized {@link Portrait} object. It contains the same three dimensions
+     * but in human-readable string format rather than numerical vectors.
+     * </p>
+     *
+     * @see Portrait
+     * @see #parsePortraitResponse(String)
      */
     @Data
     private static class PortraitRaw {

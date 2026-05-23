@@ -19,11 +19,82 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * File upload and management utilities
+ * Secure file upload and management utilities for handling PDF documents.
+ * <p>
+ * This class provides comprehensive file handling capabilities with a strong focus
+ * on security, including:
+ * <ul>
+ *   <li>Secure PDF file upload with multiple validation layers</li>
+ *   <li>Path traversal attack prevention</li>
+ *   <li>File size and content type validation</li>
+ *   <li>Safe file deletion with directory containment checks</li>
+ *   <li>Secure file streaming for download/view operations</li>
+ *   <li>Path sanitization and normalization</li>
+ * </ul>
+ * </p>
+ * <p>
+ * <b>Security Features:</b>
+ * <ol>
+ *   <li><b>Extension Validation</b>: Only .pdf files are accepted</li>
+ *   <li><b>Content Type Check</b>: Validates MIME type is application/pdf</li>
+ *   <li><b>UUID Filename</b>: Generates unique filenames to prevent overwrites</li>
+ *   <li><b>Path Traversal Prevention</b>: Rejects paths containing ".."</li>
+ *   <li><b>Directory Containment</b>: Ensures files stay within uploads directory</li>
+ *   <li><b>Size Limit</b>: Enforces 10MB maximum file size</li>
+ *   <li><b>Null Byte Injection</b>: Removes null bytes from paths</li>
+ *   <li><b>MIME Sniffing Protection</b>: Sets X-Content-Type-Options header</li>
+ * </ol>
+ * </p>
+ * <p>
+ * <b>Storage Structure:</b>
+ * <pre>
+ * uploads/
+ * ├── resumes/
+ * │   ├── uuid1.pdf
+ * │   └── uuid2.pdf
+ * └── photos/
+ *     └── uuid3.pdf
+ * </pre>
+ * Files are stored with UUID-based names in subdirectories under the configured upload directory.
+ * Database stores relative paths like "resumes/uuid1.pdf".
+ * </p>
+ * <p>
+ * <b>Configuration:</b> Set the upload directory via {@link #setFileDir(String)} during
+ * application initialization. Default behavior requires explicit configuration.
+ * </p>
+ * <p>
+ * <b>Usage Example:</b>
+ * <pre>{@code
+ * // In a Servlet handling file upload:
+ * Part filePart = FileUtils.getFilePart(request, "resume");
+ * if (filePart != null) {
+ *     try {
+ *         String relativePath = FileUtils.savePdfFile(filePart, "resumes");
+ *         // Store relativePath in database
+ *         taProfile.setResumePath(relativePath);
+ *         
+ *         // Generate web-accessible URL
+ *         String fileUrl = FileUtils.getFileUrl(request.getContextPath(), relativePath);
+ *         
+ *     } catch (SecurityException e) {
+ *         RespUtils.writeError(response, "Invalid file: " + e.getMessage());
+ *     }
+ * }
+ * 
+ * // To serve file for viewing/downloading:
+ * FileUtils.serveFile(request, response, relativePath);
+ * 
+ * // To delete file:
+ * FileUtils.deleteFile(relativePath);
+ * }</pre>
+ * </p>
  *
  * @author Jflame
  * @version 2.0.0
  * @since 2026/4/2
+ * @see Part
+ * @see Files
+ * @see Path
  */
 @Slf4j
 public class FileUtils {
@@ -40,18 +111,56 @@ public class FileUtils {
     // Maximum file size (10MB)
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+    /**
+     * Base directory for file uploads.
+     * <p>
+     * Must be configured via {@link #setFileDir(String)} before using any file operations.
+     * Recommended to set during application initialization in a ServletContextListener.
+     * </p>
+     * <p>
+     * <b>Note:</b> This is a static field shared across all file operations.
+     * Changing it affects all file handling globally.
+     * </p>
+     */
     @Getter
     @Setter
     private static String fileDir;
 
 
     /**
-     * Securely save uploaded PDF file to upload directory.
+     * Securely saves an uploaded PDF file to the upload directory with comprehensive validation.
+     * <p>
+     * This method performs 6 layers of security checks:
+     * <ol>
+     *   <li>Validates part existence and non-empty content</li>
+     *   <li>Checks file extension (.pdf only)</li>
+     *   <li>Verifies content type (application/pdf)</li>
+     *   <li>Generates UUID-based safe filename</li>
+     *   <li>Validates resolved path stays within upload directory</li>
+     *   <li>Enforces 10MB size limit</li>
+     * </ol>
+     * </p>
+     * <p>
+     * <b>Filename Strategy:</b> Original filename is discarded and replaced with UUID + .pdf
+     * to prevent:
+     * <ul>
+     *   <li>Filename collisions</li>
+     *   <li>Special character issues</li>
+     *   <li>Path traversal attempts</li>
+     *   <li>Information disclosure (original name may contain sensitive data)</li>
+     * </ul>
+     * </p>
+     * <p>
+     * <b>Return Value:</b> Returns relative path in format "{subDir}/{uuid}.pdf" suitable
+     * for database storage. Example: "resumes/a1b2c3d4-e5f6-7890-abcd-ef1234567890.pdf"
+     * </p>
      *
-     * @param part The uploaded file part from multipart request
+     * @param part   The uploaded file part from multipart request
      * @param subDir Subdirectory under uploads folder (e.g., "resumes", "photos")
      * @return Relative path for database storage (e.g., "resumes/uuid.pdf")
-     * @throws Exception if validation fails or IO error occurs
+     * @throws IllegalArgumentException if part is null, empty, or has no filename
+     * @throws SecurityException        if validation fails (invalid type, size, or path)
+     * @throws IOException              if file I/O operations fail
      */
     public static String savePdfFile(Part part, String subDir) throws Exception {
         // Validate part
@@ -122,9 +231,22 @@ public class FileUtils {
     }
 
     /**
-     * Get uploaded file part from request by field name.
+     * Retrieves the uploaded file part from a multipart request by field name.
+     * <p>
+     * This method iterates through all parts in the request and returns the first
+     * matching part with non-zero size.
+     * </p>
+     * <p>
+     * <b>Usage:</b>
+     * <pre>{@code
+     * Part resumePart = FileUtils.getFilePart(request, "resume");
+     * if (resumePart != null) {
+     *     String path = FileUtils.savePdfFile(resumePart, "resumes");
+     * }
+     * }</pre>
+     * </p>
      *
-     * @param req HttpServletRequest containing the multipart request
+     * @param req       HttpServletRequest containing the multipart request
      * @param fieldName The form field name (e.g., "resume", "photo")
      * @return The Part object if found with content, null otherwise
      */
@@ -146,10 +268,22 @@ public class FileUtils {
     }
 
     /**
-     * Delete uploaded file from the upload directory.
+     * Deletes a file from the upload directory with security validation.
+     * <p>
+     * This method performs path traversal checks and directory containment verification
+     * before deleting the file to prevent unauthorized file deletion.
+     * </p>
+     * <p>
+     * <b>Security Checks:</b>
+     * <ul>
+     *   <li>Rejects paths containing ".." (path traversal)</li>
+     *   <li>Normalizes path and verifies it's within uploads directory</li>
+     *   <li>Logs warnings for suspicious deletion attempts</li>
+     * </ul>
+     * </p>
      *
-     * @param relativePath The relative path stored in database
-     * @return true if deleted successfully, false otherwise
+     * @param relativePath The relative path stored in database (e.g., "resumes/uuid.pdf")
+     * @return true if deleted successfully, false if file not found or validation failed
      */
     public static boolean deleteFile(String relativePath) {
         if (relativePath == null || relativePath.trim().isEmpty()) {
@@ -186,10 +320,14 @@ public class FileUtils {
     }
 
     /**
-     * Check if file exists in the upload directory.
+     * Checks if a file exists in the upload directory.
+     * <p>
+     * Performs the same security validations as {@link #deleteFile(String)} to prevent
+     * path traversal attacks.
+     * </p>
      *
      * @param relativePath The relative path stored in database
-     * @return true if file exists, false otherwise
+     * @return true if file exists and passes validation, false otherwise
      */
     public static boolean fileExists(String relativePath) {
         if (relativePath == null || relativePath.trim().isEmpty()) {
@@ -215,9 +353,25 @@ public class FileUtils {
     }
 
     /**
-     * Get the web-accessible URL for an uploaded file.
+     * Constructs a web-accessible URL for an uploaded file.
+     * <p>
+     * This method combines the application context path, upload directory, and relative
+     * file path to create a complete URL that can be used in HTML links or redirects.
+     * </p>
+     * <p>
+     * <b>Example:</b>
+     * <pre>
+     * Context path: /ta-system
+     * File dir: upload
+     * Relative path: resumes/abc123.pdf
+     * Result: /ta-system/upload/resumes/abc123.pdf
+     * </pre>
+     * </p>
+     * <p>
+     * <b>Security:</b> Rejects paths containing ".." to prevent path traversal in URLs.
+     * </p>
      *
-     * @param contextPath The web application context path (from req.getContextPath())
+     * @param contextPath  The web application context path (from req.getContextPath())
      * @param relativePath The relative path stored in database (e.g., "resumes/uuid.pdf")
      * @return Web-accessible URL (e.g., "/app/upload/resumes/uuid.pdf"), or null if invalid
      */
@@ -246,12 +400,45 @@ public class FileUtils {
     }
 
     /**
-     * Stream a file to HTTP response for secure download/view.
+     * Streams a file to HTTP response for secure download or inline viewing.
+     * <p>
+     * This method handles the complete file serving process:
+     * <ol>
+     *   <li>Validates the relative path (rejects path traversal)</li>
+     *   <li>Verifies file is within uploads directory</li>
+     *   <li>Checks file existence</li>
+     *   <li>Detects content type automatically</li>
+     *   <li>Sets appropriate headers (Content-Disposition, X-Content-Type-Options)</li>
+     *   <li>Streams file content in 8KB chunks</li>
+     * </ol>
+     * </p>
+     * <p>
+     * <b>Download vs Inline:</b> Controlled by request parameter "download":
+     * <ul>
+     *   <li>{@code ?download=true} → Content-Disposition: attachment (forces download)</li>
+     *   <li>No parameter or false → Content-Disposition: inline (browser displays if possible)</li>
+     * </ul>
+     * </p>
+     * <p>
+     * <b>Security Headers:</b>
+     * <ul>
+     *   <li>X-Content-Type-Options: nosniff (prevents MIME type sniffing)</li>
+     * </ul>
+     * </p>
+     * <p>
+     * <b>Usage:</b>
+     * <pre>{@code
+     * // In a Servlet:
+     * String relativePath = request.getParameter("path");
+     * FileUtils.serveFile(request, response, relativePath);
+     * }</pre>
+     * </p>
      *
-     * @param req HttpServletRequest (used for determining download mode)
-     * @param resp HttpServletResponse (used for streaming file content)
+     * @param req          HttpServletRequest (used for determining download mode)
+     * @param resp         HttpServletResponse (used for streaming file content)
      * @param relativePath The relative path stored in database
-     * @throws IOException if IO error occurs
+     * @throws IOException if IO error occurs or file not found
+     * @see #sanitizePath(String)
      */
     public static void serveFile(HttpServletRequest req, HttpServletResponse resp,
                                  String relativePath) throws IOException {
@@ -326,10 +513,34 @@ public class FileUtils {
     }
 
     /**
-     * Validate and sanitize file path for storage and access.
+     * Validates and sanitizes a file path for safe storage and access.
+     * <p>
+     * This method performs comprehensive path sanitization:
+     * <ol>
+     *   <li>Removes null bytes (prevents null byte injection)</li>
+     *   <li>Rejects paths containing ".." (path traversal)</li>
+     *   <li>Normalizes backslashes to forward slashes</li>
+     *   <li>Collapses multiple consecutive slashes to single slash</li>
+     *   <li>Validates characters (only alphanumeric, dash, underscore, dot, slash)</li>
+     *   <li>Removes leading slash</li>
+     * </ol>
+     * </p>
+     * <p>
+     * <b>Allowed Characters:</b> {@code [a-zA-Z0-9_\-./]}
+     * </p>
+     * <p>
+     * <b>Examples:</b>
+     * <pre>
+     * Input: "resumes/../etc/passwd" → Output: null (rejected)
+     * Input: "resumes\\file.pdf"     → Output: "resumes/file.pdf"
+     * Input: "//resumes///file.pdf"  → Output: "resumes/file.pdf"
+     * Input: "/resumes/file.pdf"     → Output: "resumes/file.pdf"
+     * Input: "resume<script>.pdf"    → Output: null (rejected)
+     * </pre>
+     * </p>
      *
-     * @param path The path to validate
-     * @return Sanitized path or null if invalid
+     * @param path The path to validate and sanitize
+     * @return Sanitized path or null if path is invalid or contains dangerous patterns
      */
     public static String sanitizePath(String path) {
         if (path == null || path.trim().isEmpty()) {
@@ -366,10 +577,22 @@ public class FileUtils {
     }
 
     /**
-     * Get File object from relative path stored in database.
+     * Retrieves a File object from a relative path stored in the database.
+     * <p>
+     * This method performs security validations before returning the File object
+     * to prevent path traversal and unauthorized file access.
+     * </p>
+     * <p>
+     * <b>Use Case:</b> When you need a File object for operations like:
+     * <ul>
+     *   <li>Checking file metadata (size, last modified)</li>
+     *   <li>Passing to other APIs that require File objects</li>
+     *   <li>Manual file operations not covered by other methods</li>
+     * </ul>
+     * </p>
      *
      * @param relativePath The relative path stored in database (e.g., "resumes/uuid.pdf")
-     * @return File object if exists, null otherwise
+     * @return File object if exists and passes validation, null otherwise
      */
     public static File getFileFromRelativePath(String relativePath) {
         if (relativePath == null || relativePath.trim().isEmpty()) {

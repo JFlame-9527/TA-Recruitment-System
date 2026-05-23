@@ -15,22 +15,42 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * File parser responsible for uploading files and extracting file IDs
+ * File parser responsible for uploading files and extracting file IDs.
  * <p>
- * Responsibilities:
- * 1. Validate file parts
- * 2. Upload files via OpenAI-compatible API
- * 3. Return fileId for further processing
+ * This class provides functionality to upload resume files (PDF, DOC, DOCX, TXT, MD)
+ * to the OpenAI-compatible API service and retrieve file IDs for further AI processing.
+ * It supports both multipart file uploads from HTTP requests and existing files on disk.
+ * </p>
+ * <p>
+ * Key features:
+ * <ul>
+ *   <li>File validation for supported formats</li>
+ *   <li>Automatic retry mechanism with exponential backoff for rate limiting</li>
+ *   <li>Temporary file management with automatic cleanup</li>
+ *   <li>Integration with Qwen AI service via OpenAI-compatible API</li>
+ * </ul>
+ * </p>
  *
  * @author Jflame
  * @version 3.0.0
  * @since 2026/4/21
+ * @see QwenConfiguration
+ * @see com.openai.client.OpenAIClient
  */
 @Slf4j
 public class FileParser {
 
     private final OpenAIClient openAIClient;
 
+    /**
+     * Constructs a new FileParser instance.
+     * <p>
+     * Initializes the OpenAI client using configuration from {@link QwenConfiguration}.
+     * The client is configured with the API key and base URL from the singleton configuration instance.
+     * </p>
+     *
+     * @throws RuntimeException if configuration initialization fails
+     */
     public FileParser() {
         QwenConfiguration config = QwenConfiguration.getInstance();
         String apiKey = config.getApiKey();
@@ -45,10 +65,18 @@ public class FileParser {
     }
 
     /**
-     * Extract fileId from uploaded file
+     * Extracts file ID from uploaded multipart file.
+     * <p>
+     * This method validates the file part, uploads it to the AI service,
+     * and returns the file ID for subsequent processing.
+     * </p>
      *
      * @param filePart Multipart file from HTTP request
      * @return fileId string for AI processing
+     * @throws IllegalArgumentException if file part is null, empty, or has unsupported format
+     * @throws RuntimeException if file upload fails
+     * @see #validateFilePart(Part)
+     * @see #uploadFile(Part)
      */
     public String extractFileId(Part filePart) {
         validateFilePart(filePart);
@@ -68,10 +96,26 @@ public class FileParser {
     }
 
     /**
-     * Extract fileId from existing file on disk
+     * Extracts file ID from an existing file on disk.
+     * <p>
+     * This method validates the file, uploads it to the AI service with automatic retry
+     * mechanism for handling rate limits (HTTP 429), and returns the file ID.
+     * </p>
+     * <p>
+     * Retry strategy:
+     * <ul>
+     *   <li>Maximum 5 retries</li>
+     *   <li>Exponential backoff: 3s, 6s, 12s, 24s, 48s</li>
+     *   <li>Only retries on rate limit errors (429)</li>
+     * </ul>
+     * </p>
      *
      * @param file File object representing the existing file
      * @return fileId string for AI processing
+     * @throws IllegalArgumentException if file is null, doesn't exist, or has unsupported format
+     * @throws RuntimeException if file upload fails after maximum retries
+     * @see #validateFile(File)
+     * @see #uploadFile(File)
      */
     public String extractFileId(File file) {
         if (file == null || !file.exists()) {
@@ -120,7 +164,18 @@ public class FileParser {
     }
 
     /**
-     * Validate file part
+     * Validates the multipart file part.
+     * <p>
+     * Checks the following conditions:
+     * <ul>
+     *   <li>File part is not null</li>
+     *   <li>File size is greater than 0</li>
+     *   <li>File extension is one of: PDF, DOC, DOCX, TXT</li>
+     * </ul>
+     * </p>
+     *
+     * @param filePart the multipart file part to validate
+     * @throws IllegalArgumentException if validation fails
      */
     private void validateFilePart(Part filePart) {
         if (filePart == null) {
@@ -136,7 +191,20 @@ public class FileParser {
     }
 
     /**
-     * Validate file
+     * Validates the file object.
+     * <p>
+     * Checks the following conditions:
+     * <ul>
+     *   <li>File is not null</li>
+     *   <li>File exists on disk</li>
+     *   <li>Path represents a regular file (not directory)</li>
+     *   <li>File size is greater than 0</li>
+     *   <li>File extension is one of: PDF, DOC, DOCX, TXT, MD</li>
+     * </ul>
+     * </p>
+     *
+     * @param file the file object to validate
+     * @throws IllegalArgumentException if validation fails
      */
     private void validateFile(File file) {
         if (file == null) {
@@ -158,7 +226,22 @@ public class FileParser {
     }
 
     /**
-     * Upload file using OpenAI-compatible API and return fileId
+     * Uploads a multipart file using OpenAI-compatible API and returns the file ID.
+     * <p>
+     * Process:
+     * <ol>
+     *   <li>Creates a temporary file</li>
+     *   <li>Copies the multipart file content to the temporary file</li>
+     *   <li>Uploads to AI service with purpose "file-extract"</li>
+     *   <li>Returns the file ID from the response</li>
+     *   <li>Cleans up the temporary file</li>
+     * </ol>
+     * </p>
+     *
+     * @param filePart the multipart file to upload
+     * @return the file ID returned by the AI service
+     * @throws IOException if file operations fail
+     * @throws RuntimeException if upload fails or no file ID is returned
      */
     private String uploadFile(Part filePart) throws IOException {
         Path tempFile = Files.createTempFile("resume_", "_" + filePart.getSubmittedFileName());
@@ -185,7 +268,22 @@ public class FileParser {
     }
 
     /**
-     * Upload file using OpenAI-compatible API and return fileId
+     * Uploads a file from disk using OpenAI-compatible API and returns the file ID.
+     * <p>
+     * Process:
+     * <ol>
+     *   <li>Creates a temporary file</li>
+     *   <li>Copies the source file content to the temporary file</li>
+     *   <li>Uploads to AI service with purpose "file-extract"</li>
+     *   <li>Returns the file ID from the response</li>
+     *   <li>Cleans up the temporary file</li>
+     * </ol>
+     * </p>
+     *
+     * @param file the file to upload
+     * @return the file ID returned by the AI service
+     * @throws IOException if file operations fail
+     * @throws RuntimeException if upload fails or no file ID is returned
      */
     private String uploadFile(File file) throws IOException {
         Path tempFile = Files.createTempFile("resume_", "_" + file.getName());
