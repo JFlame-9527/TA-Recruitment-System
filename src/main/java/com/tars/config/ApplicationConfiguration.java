@@ -567,8 +567,6 @@ public class ApplicationConfiguration {
      * </p>
      *
      * @return true if admin account exists, false otherwise
-     * @see User#getRole()
-     * @see User#getName()
      */
     private static boolean isAdminAccountExists() {
         try {
