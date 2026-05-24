@@ -82,7 +82,7 @@ public class QueryCondition {
     /**
      * Page number for pagination (1-based index).
      * <p>
-     * Defaults to 1 if null or <= 0. Validated through {@link #setPage(Integer)}.
+     * Defaults to 1 if null or &lt;= 0. Validated through {@link #setPage(Integer)}.
      * </p>
      *
      * @see #setPage(Integer)
@@ -92,7 +92,7 @@ public class QueryCondition {
     /**
      * Sets the page number with validation.
      * <p>
-     * Ensures page number is always positive. If the provided value is null or <= 0,
+     * Ensures page number is always positive. If the provided value is null or &lt;= 0,
      * it defaults to page 1.
      * </p>
      *

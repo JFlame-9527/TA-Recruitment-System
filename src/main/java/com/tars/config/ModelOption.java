@@ -72,8 +72,6 @@ public class ModelOption {
      *   <li>{@code text-embedding-v2} - Vector embedding generation</li>
      * </ul>
      * </p>
-     *
-     * @see #getTemperature()
      */
     private String model;
 
@@ -97,9 +95,6 @@ public class ModelOption {
      *   <li>Embedding models: 0.0 (not applicable)</li>
      * </ul>
      * </p>
-     *
-     * @see #getTopP()
-     * @see #getTopK()
      */
     private float temperature;
 
@@ -119,8 +114,6 @@ public class ModelOption {
      * Lower Top-P makes the model more focused, while higher temperature adds creativity
      * within that focused set.
      * </p>
-     *
-     * @see #getTemperature()
      */
     private double topP;
 
@@ -136,8 +129,6 @@ public class ModelOption {
      *   <li><b>&gt; 100</b>: More diverse, may include lower quality tokens</li>
      *   <li><b>0</b>: Disabled (consider all tokens)</li>
      * </ul>
-     *
-     * @see #getTopP()
      */
     private int topK;
 
@@ -175,8 +166,6 @@ public class ModelOption {
      * <b>Note:</b> Setting this too low may truncate important information.
      * Setting it too high may increase API costs and response time.
      * </p>
-     *
-     * @see #getModel()
      */
     private int maxTokens;
 

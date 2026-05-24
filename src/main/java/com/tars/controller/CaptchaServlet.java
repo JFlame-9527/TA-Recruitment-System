@@ -33,16 +33,9 @@ import java.util.Properties;
  * </ul>
  * </p>
  * <p>
- * <b>Usage:</b> Include in HTML as an image source:
- * <pre>{@code
- * <img src="captcha" alt="CAPTCHA" id="captchaImg" onclick="refreshCaptcha()">
- * 
- * <script>
- * function refreshCaptcha() {
- *     document.getElementById('captchaImg').src = 'captcha?' + Math.random();
- * }
- * </script>
- * }</pre>
+ * <b>Usage:</b> Include in HTML as an image source. To refresh the CAPTCHA, reload the image
+ * with a unique query parameter (e.g., timestamp or random number) to bypass browser cache.
+ * This ensures users always see a fresh challenge rather than a cached image.
  * </p>
  * <p>
  * <b>Session Storage:</b> After generation, the CAPTCHA text and timestamp are stored in session:

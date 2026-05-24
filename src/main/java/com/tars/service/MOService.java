@@ -879,7 +879,7 @@ public class MOService {
      * <p>
      * <b>Overlap Detection:</b> A position overlaps a week if:
      * <pre>
-     * weekStart <= positionEnd AND weekEnd >= positionStart
+     * weekStart &lt;= positionEnd AND weekEnd &gt;= positionStart
      * </pre>
      * </p>
      * <p>

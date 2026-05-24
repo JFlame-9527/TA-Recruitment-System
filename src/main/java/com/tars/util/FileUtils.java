@@ -59,7 +59,7 @@ import java.util.UUID;
  * Database stores relative paths like "resumes/uuid1.pdf".
  * </p>
  * <p>
- * <b>Configuration:</b> Set the upload directory via {@link #setFileDir(String)} during
+ * <b>Configuration:</b> Set the upload directory via {@code setFileDir(String)} during
  * application initialization. Default behavior requires explicit configuration.
  * </p>
  * <p>
@@ -114,7 +114,7 @@ public class FileUtils {
     /**
      * Base directory for file uploads.
      * <p>
-     * Must be configured via {@link #setFileDir(String)} before using any file operations.
+     * Must be configured via {@code setFileDir(String)} before using any file operations.
      * Recommended to set during application initialization in a ServletContextListener.
      * </p>
      * <p>

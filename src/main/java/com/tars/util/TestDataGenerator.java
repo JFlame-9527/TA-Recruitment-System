@@ -564,7 +564,7 @@ public class TestDataGenerator {
      * <p>
      * <b>Course Distribution:</b> 20 positions covering:
      * <ul>
-     *   <li>Computer Science: 10 courses (Programming, DS&A, Web Dev, DB, ML, SE, Networks, OS, Graphics, Discrete Math)</li>
+     *   <li>Computer Science: 10 courses (Programming, DS&amp;A, Web Dev, DB, ML, SE, Networks, OS, Graphics, Discrete Math)</li>
      *   <li>Engineering: 2 courses (Mechanical Design, Circuit Analysis)</li>
      *   <li>Business: 2 courses (Accounting, Statistics)</li>
      *   <li>Science: 2 courses (Chemistry, Biology)</li>
@@ -1006,7 +1006,6 @@ public class TestDataGenerator {
      * @param skills     List of required technical skills
      * @return Generated description text (trimmed), or throws exception on API failure
      * @throws Exception if Qwen API call fails or returns invalid response
-     * @see QwenConfiguration#getApiKey()
      */
     private String generatePositionDescription(String title, String moduleName, List<String> skills) throws Exception {
         String apiKey = QwenConfiguration.getInstance().getApiKey();
@@ -1306,7 +1305,6 @@ public class TestDataGenerator {
      * @param phone   Contact phone number
      * @return Generated Markdown resume content (trimmed), or throws exception on API failure
      * @throws Exception if Qwen API call fails or returns invalid response
-     * @see QwenConfiguration#getQwenLong()
      */
     private String generateResumeMarkdown(String name, String major, String degree, int year,
                                                  String college, List<String> skills,

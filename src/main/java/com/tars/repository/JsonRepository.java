@@ -89,12 +89,9 @@ public class JsonRepository<T> {
      * Base directory for all JSON data files.
      * <p>
      * Defaults to {@code "data"} relative to the working directory.
-     * Can be overridden via {@link #setDataDir(String)} for testing or custom configurations.
+     * Can be overridden via {@code setDataDir(String)} for testing or custom configurations.
      * </p>
-     * <p>
-     * <b>Note:</b> This is a static field shared across all repository instances.
-     * Changing it affects all repositories globally.
-     * </p>
+
      */
     @Getter
     @Setter

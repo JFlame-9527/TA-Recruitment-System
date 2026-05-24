@@ -35,7 +35,6 @@ import lombok.Data;
  * @version 3.0.0
  * @since 2026/4/16
  * @see com.tars.ai.PortraitMatcher
- * @see QwenConfiguration#getWeight()
  */
 @Data
 @Builder
@@ -51,8 +50,6 @@ public class Weight {
      * <p>
      * <b>Recommended range:</b> 0.4 - 0.6 (40% - 60%)
      * </p>
-     *
-     * @see com.tars.entity.bean.Portrait#getSkills()
      */
     private float skills;
 
@@ -66,8 +63,6 @@ public class Weight {
      * <p>
      * <b>Recommended range:</b> 0.2 - 0.4 (20% - 40%)
      * </p>
-     *
-     * @see com.tars.entity.bean.Portrait#getExperience()
      */
     private float experience;
 
@@ -81,8 +76,6 @@ public class Weight {
      * <p>
      * <b>Recommended range:</b> 0.1 - 0.3 (10% - 30%)
      * </p>
-     *
-     * @see com.tars.entity.bean.Portrait#getSoftSkills()
      */
     private float softSkills;
 }

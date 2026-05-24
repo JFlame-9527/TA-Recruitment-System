@@ -517,8 +517,8 @@ public class MOServlet extends BaseServlet {
      * <b>Workflow:</b>
      * <pre>
      * 1. MO clicks "Repost" button on withdrawn position
-     * 2. Frontend calls: POST /moServlet?action=repostPosition&posId=xxx
-     * 3. This method validates and redirects to: GET /moServlet?action=post&repostId=xxx
+     * 2. Frontend calls: POST /moServlet?action=repostPosition&amp;posId=xxx
+     * 3. This method validates and redirects to: GET /moServlet?action=post&amp;repostId=xxx
      * 4. post() method loads original data and displays form
      * 5. MO modifies fields and submits: POST /moServlet?action=postPosition
      * 6. postPosition() creates updated position with preserved ID
